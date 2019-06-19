@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !-f
+RewriteCond %{REQUEST_URI} !-d
+RewriteCond %{REQUEST_URI} !-L
+# RewriteRule ^([a-zA-Z_-]*)/?([a-zA-Z_-]*)?/?([a-zA-Z0-9_-]*)?/?([a-zA-Z0-9_-]*)$ index.php?controller=$1&action1=$2&action2=$3&action3=$4 [NC,L]
+
+# l = last
+RewriteRule ^(example|test|css|vendors|vendor|js|img|upload)($|/) - [L]
+RewriteRule ^(autorunGen.php|autoload.php)($|/) - [L]
+
+RewriteRule ^(.*)$ test1.php?req=$1 [L,QSA]
+
+</IfModule>
