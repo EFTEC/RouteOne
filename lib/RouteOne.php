@@ -3,8 +3,12 @@
 namespace eftec\routeone;
 
 
+use Exception;
+use UnexpectedValueException;
+
 /**
  * Class RouteOne
+ *
  * @package eftec\RouteOne
  * @version 0.10 20181028
  * @copyright jorge castro castillo
@@ -12,30 +16,34 @@ namespace eftec\routeone;
  */
 class RouteOne {
     /** @var string It is the base url. RARELY CHANGED */
-    var $base='';
+    private $base='';
     /** @var int It is the type url. RARELY CHANGED unless it's calls a different behaviour */
-    var $type=0;
+    private $type='';
     /** @var string It's the module. RARELY CHANGED unless the application is jumping from one module to another */
-    var $module="";
+    private $module='';
+
     /** @var string It's the controller. CAN CHANGE with the controller */
-    var $controller;
+    private $controller;
     /** @var string It's the action. CAN CHANGE with the module */
-    var $action;
+    private $action;
     /** @var string It's the identifier. CAN CHANGE */
-    var $id;
+    private $id;
     /** @var string. It's the event (such as "click on button). CAN CHANGE with the idparent  */
-    var $event;
+    private $event;
     /** @var string. It's the event (such as "click on button). CAN CHANGE with the Id  */
-    var $idparent;
+    private $idparent;
     /** @var string. It's the event (such as "click on button). VARIABLE  */
-    var $extra;
+    private $extra;
+    /** @var string Default api initial Path */
+    private $apiPath;
+    /** @var string default web service initial Path */
+    private $wsPath;
 
-
-    var $category;
-    var $subcategory;
-    var $subsubcategory;
-
-    var $forceType=null;
+    private $category;
+    private $subcategory;
+    private $subsubcategory;
+    /** @var string|null=['api','ws','controller','front'][$i]  */
+    private $forceType=null;
 
     /** @var boolean  */
     private $isPostBack=false;
@@ -46,18 +54,23 @@ class RouteOne {
     /**
      * RouteOne constructor.
      *
-     * @param string $base
-     * @param string $defController
-     * @param int    $forcedType=['api','ws','controller','front'][$i]
-     * @param string $defAction
-     * @param bool   $isModule
+     * @param string $base base url
+     * @param string $forcedType=['api','ws','controller','front'][$i]<br>
+     *                          <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
+     *                          <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
+     *                          <b>controller</b> then it expects a path as controller/action/id/idparent<br>
+     *                          <b>front</b> then it expects a path as /category/subcategory/subsubcategory/id<br>
+     *                          aaa<br>
+     * @param bool   $isModule if true then the route start reading a module name<br>
+     *                         <b>false</b> controller/action/id/idparent<br>
+     *                         <b>true</b> module/controller/action/id/idparent<br>
      */
-    public function __construct($base='', $defController="Home", $forcedType=null, $defAction="index", $isModule=false)
+    public function __construct($base='', $forcedType=null, $isModule=false)
     {
         $this->base=$base;
-        $this->defController = $defController;
+        
         $this->forceType = $forcedType;
-        $this->defAction = $defAction;
+        
         $this->isModule=$isModule;
 
         if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
@@ -65,6 +78,85 @@ class RouteOne {
         } else {
             $this->isPostBack=false;
         }
+        $this->setDefaultValues();
+        $this->setPath();
+    }
+
+    /**
+     * It creates and object and calls the method.
+     * @param string $postfix postfix of the class.
+     * @param bool   $throwOnError if true then it throws an exception. If false then it returns the error (if any)
+     *
+     * @return string|null null if the operation was correct, or the message of error if it failed.
+     * @throws Exception
+     */
+    public function callObject($postfix='Controller',$throwOnError=true) {
+        global $controller;
+        $op=$this->controller.$postfix;
+        if (!class_exists($op,true)) {
+            if($throwOnError) throw new Exception("Class $op doesn't exist");
+            return "Class $op doesn't exist";
+        } 
+        try {
+            $controller = new $op();
+            $action2 = $this->action . "Action";
+        } catch (Exception $ex) {
+            if($throwOnError) throw $ex;
+            return $ex->getMessage();
+        }
+
+        if (method_exists($controller,$action2)) {
+            $controller->{$action2}($this->event, $this->id, $this->idparent);
+        } else {
+            if($throwOnError) throw new UnexpectedValueException("incorrect action [{$this->action}] for [{$this->controller}]");
+            else return "Incorrect action [{$this->action}] for [{$this->controller}]";
+        }
+        return null;
+    }
+
+    public function setPath($apiPath="api",$wsPath="ws") {
+        $this->apiPath=$apiPath;
+        $this->wsPath=$wsPath;
+        return $this;
+    }
+    public function getCurrentServer()
+    {
+        $server_name = $_SERVER['SERVER_NAME'];
+        $port = !in_array($_SERVER['SERVER_PORT'], [80, 443]) ? ":$_SERVER[SERVER_PORT]" : '';
+        if (!empty($_SERVER['HTTPS']) && (strtolower($_SERVER['HTTPS']) == 'on' || $_SERVER['HTTPS'] == '1')) {
+            $scheme = 'https';
+        } else {
+            $scheme = 'http';
+        }
+        return $scheme.'://'.$server_name.$port;
+    }
+
+    /**
+     * Returns the current and real url without traling space<br>
+     * Note: this function relies on $_SERVER['SERVER_NAME'] and it could be modified by the end-user
+     * @param bool $withoutFilename if true then it doesn't include the filename
+     *
+     * @return string
+     */
+    public function getCurrentUrl($withoutFilename=true) {
+        if($withoutFilename) {
+            return dirname($this->getCurrentServer().$_SERVER['SCRIPT_NAME']);
+        }
+        return $this->getCurrentServer().$_SERVER['SCRIPT_NAME'];
+    }
+    
+    /**
+     * It sets the default controller and action (if they are not entered in the route)<br>
+     * It is uses to set a default route.
+     * @param string $defController 
+     * @param string $defAction
+     *
+     * @return $this
+     */
+    public function setDefaultValues($defController="Home",$defAction="index") {
+        $this->defController = $defController;
+        $this->defAction = $defAction;
+        return $this;
     }
 
     public function url($module=null,$controller=null,$action=null,$id=null,$idparent=null) {
@@ -82,7 +174,6 @@ class RouteOne {
     public function reset() {
         // $this->base=''; base is always keep
         $this->defController = '';
-        // $this->type = 0;
         $this->forceType=null;
         $this->defAction = '';
         $this->isModule='';
@@ -107,7 +198,7 @@ class RouteOne {
      *  Module/ws/ControllerWS/action/id/idparent/?_event=xx&extra=xxx
      * .htaccess = RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]<br>
      */
-    public function getStrategy1() {
+    public function fetch() {
         $path=explode("/",filter_var(@$_GET['req'],FILTER_SANITIZE_URL));
         $first=$path[0]??$this->defController;
         $id=0;
@@ -120,44 +211,42 @@ class RouteOne {
         if ($this->forceType===null) {
         	
             switch ($first) {
-                case "api": // [module]/api/controller/action
+                case $this->apiPath: // [module]/api/controller/action
                     $id++;
-                    $this->type = 1;
+                    $this->type = 'api';
                     $this->controller = @$path[$id++] ?? $this->defController;
                     break;
-                case "webport": // [module]/ws/controller/action
+                case $this->wsPath: // [module]/ws/controller/action
                     $id++;
-                    $this->type = 2;
+                    $this->type = 'ws';
                     $this->controller = @$path[$id++] ?? $this->defController;
                     break;
 
                 default: // [module]/controller/action
-                    $this->type = 0;
+                    $this->type = 'controller';
                     $this->controller = @$path[$id++] ?? $this->defController;
             }
         } else {
+            $this->type=$this->forceType;
             switch ($this->forceType) {
                 case 'api':
                     $id++;
-                    $this->type = 1;
                     $this->controller = @$path[$id++] ?? $this->defController;
                     break;
-                case 'webport':
+                case 'ws':
                     $id++;
-                    $this->type = 2;
                     $this->controller = @$path[$id++] ?? $this->defController;
                     break;
                 case 'controller':
-                    $this->type = 0;
                     $this->controller = @$path[$id++] ?? $this->defController;
                     break;
                 case 'front':
-                    $this->type = 3;
+                    // it is processed differently.
                     $this->category = @$path[$id++] ?? '';
                     $this->subcategory = @$path[$id++] ?? '';
                     $this->subsubcategory = @$path[$id++] ?? '';
                     /** @noinspection PhpUnusedLocalVariableInspection */
-                    $this->id=end($path[$id++]); // id is the last element of the path
+                    $this->id=end($path); // id is the last element of the path
                     $this->event= $this->request('_event');
                     $this->extra=$this->request('_extra');
                     return;
@@ -221,14 +310,23 @@ class RouteOne {
             $url.=$this->module.'/';
         }
         switch ($this->type) {
-            case 0:
+            case 'api':
                 $url.='';
                 break;
-            case 1:
-                $url.='api/';
+            case 'ws':
+                $url.=$this->apiPath.'/';
                 break;
-            case 2:
-                $url.='webport/';
+            case 'controller':
+                $url.=$this->wsPath.'/';
+                break;
+            case 'front':
+                $url.="{$this->category}/{$this->subcategory}/{$this->subsubcategory}/";
+                if ($this->id) $url.=$this->id.'/';
+                if ($this->idparent) $url.=$this->idparent.'/';                
+                return $url;
+                break;                
+            default:
+                trigger_error('type not defined');
                 break;
         }
         $url.=$this->controller.'/';
@@ -241,5 +339,92 @@ class RouteOne {
         return $url;
     }
 
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getModule()
+    {
+        return $this->module;
+    }
+
+    /**
+     * @return string
+     */
+    public function getController()
+    {
+        return $this->controller;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAction()
+    {
+        return $this->action;
+    }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEvent()
+    {
+        return $this->event;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdparent()
+    {
+        return $this->idparent;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExtra()
+    {
+        return $this->extra;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCategory()
+    {
+        return $this->category;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSubcategory()
+    {
+        return $this->subcategory;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSubsubcategory()
+    {
+        return $this->subsubcategory;
+    }
     
 }

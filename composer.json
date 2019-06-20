@@ -3,11 +3,10 @@
   "description": "Router service class for PHP",
   "type": "library",
   "keywords": [
-    "blade",
-    "template",
-    "view",
     "php",
-    "templating"
+    "route",
+    "router",
+    "mvc"
   ],
   "homepage": "https://github.com/EFTEC/RouteOne",
   "license": "MIT",
@@ -19,7 +18,7 @@
   ],
   "extra": {
     "branch-alias": {
-      "dev-master": "3.30-dev"
+      "dev-master": "1.0"
     }
   },
   "config": {
@@ -31,9 +30,6 @@
     "php": ">=5.6",
     "ext-json": "*"
   },
-  "suggest": {
-    "ext-mbstring": "This extension is used if it's active"
-  },  
   "archive": {
     "exclude": [
       "/examples"
