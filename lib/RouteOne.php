@@ -10,8 +10,9 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package eftec\RouteOne
- * @version 0.10 20181028
+ * @version 1.0 20190620
  * @copyright jorge castro castillo
+ * @link     https://github.com/EFTEC/RouteOne        
  * @license  lgpl v3
  */
 class RouteOne {
