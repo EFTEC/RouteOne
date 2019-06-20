@@ -12,16 +12,18 @@ $url=$route->getCurrentUrl();
 
 
 echo "<a href='{$url}/Mi'>./Mi</a><br>";
-echo "<a href='{$url}/Wrong'>./Wrong</a><br>";
+echo "<a href='{$url}/Wrong'>./Wrong (it show throws an error)</a><br>";
 echo "<a href='{$url}/Mi/Action2'>./Mi/Action2</a><br>";
-echo "<a href='{$url}/Mi/ActionWrong'>./Mi/ActionWrong</a><br>";
+echo "<a href='{$url}/Mi/ActionWrong'>./Mi/ActionWrong (it show throws an error)</a><br>";
 echo "<a href='{$url}/Mi/Action2/id'>./Mi/Action2/id</a><br>";
 echo "<a href='{$url}/Mi/Action2/id/parentid'>./Mi/Action2/id/parentid</a><br>";
 echo "<a href='{$url}/Mi/Action2/id/parentid?_event=click'>./Mi/Action2/id/parentid?_event=click</a><br>";
+echo "<a href='{$url}/Mi/Action3/id/parentid?_event=click'>./Mi/Action3/id/parentid?_event=click (method with only id)</a><br>";
 
-
+echo "<hr>";
 $route->fetch();
 $route->callObject();
+echo "<hr>";
 echo "<pre>";
 var_dump($route);
 var_dump($route->getUrl());

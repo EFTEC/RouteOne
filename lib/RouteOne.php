@@ -107,7 +107,7 @@ class RouteOne {
         }
 
         if (method_exists($controller,$action2)) {
-            $controller->{$action2}($this->event, $this->id, $this->idparent);
+            $controller->{$action2}($this->id, $this->idparent,$this->event);
         } else {
             if($throwOnError) throw new UnexpectedValueException("incorrect action [{$this->action}] for [{$this->controller}]");
             else return "Incorrect action [{$this->action}] for [{$this->controller}]";
