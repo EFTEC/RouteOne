@@ -10,44 +10,44 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package eftec\RouteOne
- * @version 1.0 20190620
+ * @version 1.1 20190620
  * @copyright jorge castro castillo
- * @link     https://github.com/EFTEC/RouteOne        
+ * @link     https://github.com/EFTEC/RouteOne
  * @license  lgpl v3
  */
 class RouteOne {
     /** @var string It is the base url. RARELY CHANGED */
-    private $base='';
-    /** @var int It is the type url. RARELY CHANGED unless it's calls a different behaviour */
-    private $type='';
+    public $base='';
+    /** @var string=['api','ws','controller','front'][$i] It is the type url. RARELY CHANGED unless it's calls a different behaviour */
+    public $type='';
     /** @var string It's the module. RARELY CHANGED unless the application is jumping from one module to another */
-    private $module='';
+    public $module='';
 
     /** @var string It's the controller. CAN CHANGE with the controller */
-    private $controller;
+    public $controller;
     /** @var string It's the action. CAN CHANGE with the module */
-    private $action;
+    public $action;
     /** @var string It's the identifier. CAN CHANGE */
-    private $id;
+    public $id;
     /** @var string. It's the event (such as "click on button). CAN CHANGE with the idparent  */
-    private $event;
+    public $event;
     /** @var string. It's the event (such as "click on button). CAN CHANGE with the Id  */
-    private $idparent;
+    public $idparent;
     /** @var string. It's the event (such as "click on button). VARIABLE  */
-    private $extra;
+    public $extra;
     /** @var string Default api initial Path */
     private $apiPath;
     /** @var string default web service initial Path */
     private $wsPath;
 
-    private $category;
-    private $subcategory;
-    private $subsubcategory;
+    public $category;
+    public $subcategory;
+    public $subsubcategory;
     /** @var string|null=['api','ws','controller','front'][$i]  */
     private $forceType=null;
 
     /** @var boolean  */
-    private $isPostBack=false;
+    public $isPostBack=false;
     private $defController;
     private $defAction;
     private $isModule;
@@ -69,9 +69,9 @@ class RouteOne {
     public function __construct($base='', $forcedType=null, $isModule=false)
     {
         $this->base=$base;
-        
+
         $this->forceType = $forcedType;
-        
+
         $this->isModule=$isModule;
 
         if (filter_input(INPUT_SERVER, 'REQUEST_METHOD') === 'POST') {
@@ -85,19 +85,20 @@ class RouteOne {
 
     /**
      * It creates and object and calls the method.
-     * @param string $postfix postfix of the class.
+     * @param string $classStructure structure of the class. %s is the name of the controller.<br>
+     *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass
      * @param bool   $throwOnError if true then it throws an exception. If false then it returns the error (if any)
      *
      * @return string|null null if the operation was correct, or the message of error if it failed.
      * @throws Exception
      */
-    public function callObject($postfix='Controller',$throwOnError=true) {
+    public function callObject($classStructure='%sController',$throwOnError=true) {
         global $controller;
-        $op=$this->controller.$postfix;
+        $op=sprintf($classStructure,$this->controller);
         if (!class_exists($op,true)) {
             if($throwOnError) throw new Exception("Class $op doesn't exist");
             return "Class $op doesn't exist";
-        } 
+        }
         try {
             $controller = new $op();
             $action2 = $this->action . "Action";
@@ -115,6 +116,34 @@ class RouteOne {
         return null;
     }
 
+    /**
+     * It calls (include) a file using the current controller.
+     * @param string $fileStructure
+     * @param bool   $throwOnError
+     *
+     * @return string|null
+     * @throws Exception
+     */
+    public function callFile($fileStructure='%s.php',$throwOnError=true) {
+        global $controller;
+        $op=sprintf($fileStructure,$this->controller);
+        try {
+            /** @noinspection PhpIncludeInspection */
+            include $op;
+        } catch (Exception $ex) {
+            if($throwOnError) throw $ex;
+            return $ex->getMessage();
+        }
+        return null;
+    }
+
+    /**
+     * It sets the default root path for api and ws
+     * @param string $apiPath
+     * @param string $wsPath
+     *
+     * @return $this
+     */
     public function setPath($apiPath="api",$wsPath="ws") {
         $this->apiPath=$apiPath;
         $this->wsPath=$wsPath;
@@ -145,11 +174,11 @@ class RouteOne {
         }
         return $this->getCurrentServer().$_SERVER['SCRIPT_NAME'];
     }
-    
+
     /**
      * It sets the default controller and action (if they are not entered in the route)<br>
      * It is uses to set a default route.
-     * @param string $defController 
+     * @param string $defController
      * @param string $defAction
      *
      * @return $this
@@ -210,22 +239,25 @@ class RouteOne {
         }
 
         if ($this->forceType===null) {
-        	
+
             switch ($first) {
                 case $this->apiPath: // [module]/api/controller/action
-                    $id++;
+                    $id++; // ignores the first one cause it's "api"
                     $this->type = 'api';
-                    $this->controller = @$path[$id++] ?? $this->defController;
+                    $this->controller = @(!$path[$id]) ? $this->defController:$path[$id];
+                    $id++;
                     break;
                 case $this->wsPath: // [module]/ws/controller/action
-                    $id++;
+                    $id++; // ignores the first one cause it's "ws"
                     $this->type = 'ws';
-                    $this->controller = @$path[$id++] ?? $this->defController;
+                    $this->controller = @(!$path[$id]) ? $this->defController:$path[$id];
+                    $id++;
                     break;
-
                 default: // [module]/controller/action
                     $this->type = 'controller';
-                    $this->controller = @$path[$id++] ?? $this->defController;
+                    $this->controller = @(!$path[$id]) ? $this->defController:$path[$id];
+                    $id++;
+                    break;
             }
         } else {
             $this->type=$this->forceType;
@@ -303,7 +335,14 @@ class RouteOne {
         $this->id=$id;
         return $this;
     }
-
+    /**
+     * @param $idParent
+     * @return RouteOne
+     */
+    public function setIdParent($idParent) {
+        $this->idparent=$idParent;
+        return $this;
+    }
     public function getUrl($extraParam='') {
 
         $url=$this->base.'/';
@@ -312,28 +351,29 @@ class RouteOne {
         }
         switch ($this->type) {
             case 'api':
+                $url.=$this->apiPath.'/';
                 $url.='';
                 break;
             case 'ws':
-                $url.=$this->apiPath.'/';
+                $url.=$this->wsPath.'/';
                 break;
             case 'controller':
-                $url.=$this->wsPath.'/';
+                $url.='';
                 break;
             case 'front':
                 $url.="{$this->category}/{$this->subcategory}/{$this->subsubcategory}/";
                 if ($this->id) $url.=$this->id.'/';
-                if ($this->idparent) $url.=$this->idparent.'/';                
+                if ($this->idparent) $url.=$this->idparent.'/';
                 return $url;
-                break;                
+                break;
             default:
                 trigger_error('type not defined');
                 break;
         }
         $url.=$this->controller.'/';
         $url.=$this->action.'/';
-        if ($this->id) $url.=$this->id.'/';
-        if ($this->idparent) $url.=$this->idparent.'/';
+        if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
+        if ($this->idparent!==null) $url.=$this->idparent.'/';
         if ($this->event) $url.='?_event='.$this->event;
         if ($this->extra) $url.='&_extra='.$this->extra;
         if ($extraParam) $url.='&'.$extraParam;
@@ -427,5 +467,5 @@ class RouteOne {
     {
         return $this->subsubcategory;
     }
-    
+
 }
