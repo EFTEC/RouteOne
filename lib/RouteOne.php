@@ -10,7 +10,7 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package eftec\RouteOne
- * @version 1.1 20190620
+ * @version 1.2 20190719
  * @copyright jorge castro castillo
  * @link     https://github.com/EFTEC/RouteOne
  * @license  lgpl v3
@@ -101,17 +101,26 @@ class RouteOne {
         }
         try {
             $controller = new $op();
-            $action2 = $this->action . "Action";
+            $actionRequest = $this->action.'Action';
+            $actionGetPost=(!$this->isPostBack) ?  $this->action.'ActionGet' : $this->action.'ActionPost';
         } catch (Exception $ex) {
             if($throwOnError) throw $ex;
             return $ex->getMessage();
         }
-
-        if (method_exists($controller,$action2)) {
-            $controller->{$action2}($this->id, $this->idparent,$this->event);
+        if (method_exists($controller,$actionRequest)) {
+            $controller->{$actionRequest}($this->id, $this->idparent,$this->event);
         } else {
-            if($throwOnError) throw new UnexpectedValueException("incorrect action [{$this->action}] for [{$this->controller}]");
-            else return "Incorrect action [{$this->action}] for [{$this->controller}]";
+            if (method_exists($controller,$actionGetPost)) {
+                $controller->{$actionGetPost}($this->id, $this->idparent,$this->event);
+            } else {
+                $pb=$this->isPostBack ? "(POST)":"(GET)";
+                $msgError="Incorrect action [{$this->action}] $pb for [{$this->controller}]";
+                if ($throwOnError) {
+                    throw new UnexpectedValueException($msgError);
+                } else {
+                    return $msgError;
+                }
+            }
         }
         return null;
     }
@@ -372,7 +381,8 @@ class RouteOne {
         }
         $url.=$this->controller.'/';
         $url.=$this->action.'/';
-        if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
+        //if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
+        if ($this->id!==null || $this->idparent!==null) $url.=$this->id.'/';
         if ($this->idparent!==null) $url.=$this->idparent.'/';
         if ($this->event) $url.='?_event='.$this->event;
         if ($this->extra) $url.='&_extra='.$this->extra;
