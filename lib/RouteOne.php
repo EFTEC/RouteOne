@@ -61,7 +61,6 @@ class RouteOne {
      *                          <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
      *                          <b>controller</b> then it expects a path as controller/action/id/idparent<br>
      *                          <b>front</b> then it expects a path as /category/subcategory/subsubcategory/id<br>
-     *                          aaa<br>
      * @param bool   $isModule if true then the route start reading a module name<br>
      *                         <b>false</b> controller/action/id/idparent<br>
      *                         <b>true</b> module/controller/action/id/idparent<br>

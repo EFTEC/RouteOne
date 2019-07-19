@@ -7,6 +7,6 @@ RewriteCond %{REQUEST_URI} !-L
 RewriteRule ^(example|test|css|vendors|vendor|js|img|upload)($|/) - [L]
 RewriteRule ^(autorunGen.php|autoload.php)($|/) - [L]
 
-RewriteRule ^(.*)$ test1.php?req=$1 [L,QSA]
+RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]
 
 </IfModule>
