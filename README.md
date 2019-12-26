@@ -8,7 +8,6 @@ It reads the url route and parses the values, so it could be interpreted manuall
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
 [![Maintenance](https://img.shields.io/maintenance/yes/2019.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php->5.6-green.svg)]()
 [![php](https://img.shields.io/badge/php-7.x-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
 
@@ -186,4 +185,30 @@ if ($route->getType()=='front') {
 ### fetch()
 
 Fetch the values from the route, and the values are processed.
+
+### callObject($classStructure='%sController',$throwOnError=true)
+
+Call a method inside an object using the current route.
+
+* **$classStructure** The current name of the controller. "%s" is the name of the current controller. Example :/Customer/Insert -> calls the controller CustomerController and the method InsertAction
+* **throwOnError** if true then it throws an error. If false then it only returns the error message.
+
+
+The name of the method is obtained via the current **action**
+
+1) **{nameaction}Action** exists then it's called.
+2) Otherwise, if $istpostback=false then it calls the method **{nameaction}ActionGet**
+3) Otherwise, if $istpostback=true then it calls the method **{nameaction}ActionPost**
+
+### callFile($fileStructure='%s.php',$throwOnError=true)
+
+It calls (include) a php file using the current name of the controller
+
+* **$fileStructure** The current name of the controller. "%s" is the name of the current controller. Example :/Customer/Insert -> calls the file Customer.php
+* **throwOnError** if true then it throws an error. If false then it only returns the error message.
+
+### $isPostBack (field)
+
+if true then the form is called as POST (i.e. a submit button).
+
 

@@ -7,6 +7,9 @@ include "MiController.php";
 
 $route=new RouteOne(".",null,false);
 
+//var_dump($_GET['req']);
+//die(1);
+
 $url=$route->getCurrentUrl();
 
 
@@ -25,6 +28,9 @@ $route->fetch();
 $route->callObject();
 echo "<hr>";
 echo "<pre>";
+
+
+
 var_dump($route);
 var_dump($route->getUrl());
 var_dump($route->getIdparent());
