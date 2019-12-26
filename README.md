@@ -3,6 +3,10 @@ Route for PHP
 
 It reads the url route and parses the values, so it could be interpreted manually or automatically.
 
+Unlikely other libraries, this library does not have dependencies and it is contained in a single class.  
+
+
+
 [![Build Status](https://travis-ci.org/EFTEC/RouteOne.svg?branch=master)](https://travis-ci.org/EFTEC/RouteOne)
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
