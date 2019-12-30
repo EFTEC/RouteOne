@@ -1,7 +1,5 @@
 <?php
-/**
- * @noinspection PhpUnusedLocalVariableInspection
- */
+
 namespace eftec\routeone;
 
 use Exception;
@@ -13,22 +11,22 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.3
+ * @version   1.4
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
     /**
-     * @var string It is the base url. RARELY CHANGED
+     * @var string It is the base url. RARELY CHANGED<br>
      */
     public $base = '';
     /**
-     * @var string=['api','ws','controller','front'][$i] It is the type url.
+     * @var string=['api','ws','controller','front'][$i] It is the type url.<br>
      * RARELY CHANGED unless it's calls a different behaviour
      */
     public $type = '';
     /**
-     * @var string It's the module. RARELY CHANGED unless the application
+     * @var string It's the module. RARELY CHANGED unless the application<br>
      * is jumping from one module to another
      */
     public $module = '';
@@ -57,13 +55,18 @@ class RouteOne
      * @var string. It's the event (such as "click on button). VARIABLE
      */
     public $extra;
+    /** @var string The current category. It is useful for the type 'front' */
     public $category;
+    /** @var string The current sub-category. It is useful for the type 'front' */
     public $subcategory;
+    /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
     /**
      * @var boolean
      */
     public $isPostBack = false;
+    /** @var array the queries fetched, excluding "req","_extra" and "_event" */
+    public $queries=[];
     /**
      * @var string Default api initial Path
      */
@@ -79,6 +82,11 @@ class RouteOne
     private $defController;
     private $defAction;
     private $isModule;
+    /** @var string the url fetched */
+    private $urlFetched='';
+
+
+
     /**
      * RouteOne constructor.
      *
@@ -208,8 +216,9 @@ class RouteOne
         return null;
     }
     /**
-     * Returns the current and real url without traling space<br>
-     * Note: this function relies on $_SERVER['SERVER_NAME'] and it could be modified by the end-user
+     * Returns the current and real url without traling space or queries/b<br>
+     * <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and
+     * it could be modified by the end-user
      *
      * @param bool $withoutFilename if true then it doesn't include the filename
      *
@@ -299,7 +308,12 @@ class RouteOne
      */
     public function fetch()
     {
-        $path = explode("/", filter_var(@$_GET['req'], FILTER_SANITIZE_URL));
+        $this->urlFetched=@$_GET['req']; // controller/action/id/..
+        $this->queries=$_GET;
+        unset($this->queries['req']);
+        unset($this->queries['_event']);
+        unset($this->queries['_extra']);
+        $path = explode("/", filter_var($this->urlFetched, FILTER_SANITIZE_URL));
         $first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
@@ -343,9 +357,6 @@ class RouteOne
                     $this->category = @$path[$id++] ?? '';
                     $this->subcategory = @$path[$id++] ?? '';
                     $this->subsubcategory = @$path[$id++] ?? '';
-                    /**
-                     * @noinspection PhpUnusedLocalVariableInspection
-                     */
                     $this->id = end($path); // id is the last element of the path
                     $this->event = $this->request('_event');
                     $this->extra = $this->request('_extra');
@@ -355,7 +366,7 @@ class RouteOne
         $this->action = @$path[$id++];
         $this->action = ($this->action) ? $this->action : $this->defAction;
         $this->id = @$path[$id++];
-        $this->idparent = @$path[$id++];
+        $this->idparent = @$path[$id+1];
         $this->event = $this->request('_event');
         $this->extra = $this->request('_extra');
     }
@@ -370,7 +381,18 @@ class RouteOne
         }
         return $default;
     }
-    public function getUrl($extraParam = '')
+
+    /**
+     * It reconstruct an url using the current information.<br>
+     * <b>Note:<b>. It discards any information outside of the type
+     * (/controller/action/id/idparent/<cutcontent>?arg=1&arg=2)
+     *
+     * @param string $extraQuery If we want to add extra queries
+     * @param bool   $includeQuery If true then it includes the queries in $this->queries
+     *
+     * @return string
+     */
+    public function getUrl($extraQuery = '',$includeQuery=false)
     {
         $url = $this->base . '/';
         if ($this->isModule) {
@@ -404,6 +426,7 @@ class RouteOne
         $url .= $this->controller . '/';
         $url .= $this->action . '/';
         //if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
+        $sepQuery='?';
         if ($this->id !== null || $this->idparent !== null) {
             $url .= $this->id . '/';
         }
@@ -412,12 +435,18 @@ class RouteOne
         }
         if ($this->event) {
             $url .= '?_event=' . $this->event;
+            $sepQuery='&';
         }
         if ($this->extra) {
-            $url .= '&_extra=' . $this->extra;
+            $url .=$sepQuery.'_extra=' . $this->extra;
+            $sepQuery='&';
         }
-        if ($extraParam) {
-            $url .= '&' . $extraParam;
+        if ($extraQuery) {
+            $url .= $sepQuery . $extraQuery;
+            $sepQuery='&';
+        }
+        if($includeQuery && count($this->queries)) {
+            $url.=$sepQuery.http_build_query($this->queries);
         }
         return $url;
     }
@@ -438,6 +467,16 @@ class RouteOne
     public function getModule()
     {
         return $this->module;
+    }
+
+    /**
+     * @param string $key
+     * @param null|mixed $valueIfNotFound
+     *
+     * @return mixed
+     */
+    public function getQuery($key,$valueIfNotFound=null) {
+        return (isset($this->queries[$key]))? $this->queries[$key] : $valueIfNotFound;
     }
     /**
      *
