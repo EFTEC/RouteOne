@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.4
+ * @version   1.5
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -356,7 +356,7 @@ class RouteOne
                     // it is processed differently.
                     $this->category = @$path[$id++] ?? '';
                     $this->subcategory = @$path[$id++] ?? '';
-                    $this->subsubcategory = @$path[$id++] ?? '';
+                    $this->subsubcategory = @$path[$id+1] ?? '';
                     $this->id = end($path); // id is the last element of the path
                     $this->event = $this->request('_event');
                     $this->extra = $this->request('_extra');
@@ -479,7 +479,15 @@ class RouteOne
         return (isset($this->queries[$key]))? $this->queries[$key] : $valueIfNotFound;
     }
     /**
-     *
+     * It sets a query value
+     * @param string $key
+     * @param null|mixed $value
+     */
+    public function setQuery($key,$value) {
+        $this->queries[$key]=$value;
+    }
+    /**
+     * It returns the current name of the controller.
      *
      * @return string
      */

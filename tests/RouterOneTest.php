@@ -85,6 +85,8 @@ class routerOneTest extends TestCase
 
         $this->assertEquals("front",$this->ro->getType());
         $this->assertEquals("def",$this->ro->getQuery('id','def'));
+        $this->ro->setQuery('id','123');
+        $this->assertEquals("123",$this->ro->getQuery('id','def'));
 
         //$this->ro->callObject();
     }
