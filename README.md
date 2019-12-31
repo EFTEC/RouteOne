@@ -5,6 +5,7 @@ It reads the url route and parses the values, so it could be interpreted manuall
 
 Unlikely other libraries, this library does not have dependencies and it is contained in a single class.  
 
+This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it fixes the functionality.  In this case, this library does not allow to change the "route" but it covers practically all cases, so it increases the performance and usability while it sacrifices flexibility.
 
 
 [![Build Status](https://travis-ci.org/EFTEC/RouteOne.svg?branch=master)](https://travis-ci.org/EFTEC/RouteOne)
@@ -15,7 +16,72 @@ Unlikely other libraries, this library does not have dependencies and it is cont
 [![php](https://img.shields.io/badge/php-7.x-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
 
-## Usage
+## What it does?
+
+Let's say we do the next operation:
+
+Some users call to the next website http://somedomain.com/Customer/Insert and we want to show a form to insert a customer
+
+```php
+$route=new RouteOne('.',null,null); // Create the RouteOneClass
+$route->fetch(); // fetch all the input values (from the route, get, post and such).
+route()->callObject('somenamespace\\controller\\%sController'); // where it will call the  class CustomerController* 
+```
+This code calls to the method **InsertActionGet** (GET), **InsertActionPost** (POST) or **InsertAction** (GET/POST)
+inside the class **Customer**
+
+The method called is written as follow:
+
+```php
+class Customer {
+    public function insertAction($id="",$idparent="",$event="") {
+        // here we do our operation.
+    }
+}
+```
+
+### What is **$id**, **$idparent** and **$event**?
+
+### **id**
+
+Let's se we want to **Update** a **Customer** number **20**, then we could call the next page
+
+> http://somedomain.com/Customer/Update/20 
+
+where 20 is the "$id" of the customer to edit (it could be a number of a string)
+
+### **idparent**
+
+And what if we want to **Update** a **Customer** number **20** of the business **APPL**
+
+> http://somedomain.com/Customer/Update/20/APPL
+
+Where APPL is the **idparent** 
+
+### **event**
+
+Now, let's say we click on some button or we do some action.  It could be captured by the field **_event** and it is read by the argument **$event**. This variable could be send via GET or POST.
+
+> http://somedomain.com/Customer/Update/20/APPL?_event=click
+
+### **Module**
+
+Now, let's say our system is modular and we have several customers (interna customers, external, etc.)
+
+```php
+$route=new RouteOne('.',null,true); // true indicates it is modular 
+$route->fetch(); 
+route()->callObject('somenamespace\\%2s%\\controller\\%1sController');
+```
+
+> http://somedomain.com/Internal/Customer/Update/20/APPL?_event=click
+
+Then, the first ramification is the name of the module (**Internal**) and it calles the class **somenamespace\Internal\controller\CustomerController**
+
+
+
+
+## Getting started
 
 1) Create a .htaccess file
 
@@ -49,7 +115,7 @@ route()->callObject('somenamespace\\controller\\%sController'); // where it will
 
 where 
 * **https://localhost** is the base (it could be changed on the constructor)
-* **api** indicates we are calling an "api". This value is fixed
+* **api** indicates we are calling an "api". This value could be changed via **$this->setPath()**
 * **Controller**. It's the controller class to call. 
 * **Action**. It's the action (method) to call
 * **id**. Some unique identifier.
@@ -76,7 +142,7 @@ WS is an alternative to API. We could use API/WS or both.  The difference is how
 
 where 
 * **https://localhost** is the base (it could be changed on the constructor)
-* **ws** indicates we are calling an "ws". This value is fixed
+* **ws** indicates we are calling an "ws". This value could be changed via **$this->setPath()**
 * **Controller**. It's the controller class to call. 
 * **Action**. It's the action (method) to call
 * **id**. Some unique identifier.
@@ -145,7 +211,7 @@ class CustomerController {
 
 ### FRONT route
 
-The front route (for the front-end) is different than other routes. Syntactically it is distributed on category/subcategory and subsubcategory. 
+The front route (for the front-end) is different than other routes. Syntactically it is distributed on category, subcategory and subsubcategory. 
 
 > This route is not identified automatically so it must be set in the constructor
 
@@ -157,6 +223,37 @@ where
 * **subcategory**. (optional) The subcategory
 * **subsubcategory**. (optional) The sub-subcategory
 * **id**. Some unique identifier. (**id** is always the last element of the chain, so /category/20, category/subc/20 and /category/subc/subc/20 always returns 20).
+
+Example: (isModule=false)
+
+> http://localhost/Toys/GoodSmileCompany/Nendoroid/Thanos
+
+* **Category** = toys
+* **Subcategory** = GoodSmileCompany
+* **Subsubcategory** = Nendoroid
+* **id** = Thanos
+
+Example: (isModule=true)
+
+> http://localhost/Retail/Toys/GoodSmileCompany/Nendoroid/Thanos
+
+* **Module** = Retail
+* **Category** = toys
+* **Subcategory** = GoodSmileCompany
+* **Subsubcategory** = Nendoroid
+* **id** = Thanos (**id** is always the last element)
+* **idparent** = (it does not work on frontal)
+
+Example: (isModule=false)
+
+> http://localhost/Toys/GoodSmileCompany/Thanos
+
+* **Category** = toys
+* **Subcategory** = GoodSmileCompany
+* **Subsubcategory** = Thanos
+* **id** = Thanos
+
+
 
 ```php 
 // router.php https://locahost/Products/New/123
@@ -186,6 +283,32 @@ if ($route->getType()=='front') {
     <b>false</b> controller/action/id/idparent<br>
     <b>true</b> module/controller/action/id/idparent<br>       
 
+### getQuery($key,$valueIfNotFound=null)
+
+It gets a query value (URL).
+
+>Note: This query does not include the values "req","_event" and "_extra"
+
+Example:
+
+```php 
+// http://localhost/..../?id=hi
+$id=$router->getQuery("id"); // hi
+$nf=$router->getQuery("something","not found"); // not found
+``` 
+
+### setQuery($key,$value)
+
+It sets a query value
+
+Example:
+
+```php 
+$route->setQuery("id","hi");
+$id=$router->getQuery("id"); // hi
+``` 
+
+
 ### fetch()
 
 Fetch the values from the route, and the values are processed.
@@ -194,9 +317,13 @@ Fetch the values from the route, and the values are processed.
 
 Call a method inside an object using the current route.
 
-* **$classStructure** The current name of the controller. "%s" is the name of the current controller. Example :/Customer/Insert -> calls the controller CustomerController and the method InsertAction
-* **throwOnError** if true then it throws an error. If false then it only returns the error message.
+* **$classStructure**  
 
+     * The first %s (or %1s) is the name of the controller.<br>
+     * The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
+     * Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
+     * Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
+* **throwOnError** if true and it fails then it throws an error. If false then it only returns the error message.
 
 The name of the method is obtained via the current **action**
 

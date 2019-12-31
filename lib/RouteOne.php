@@ -138,7 +138,7 @@ class RouteOne
      *
      * @return $this
      */
-    public function setPath($apiPath = "api", $wsPath = "ws")
+    public function setPath($apiPath = 'api', $wsPath = 'ws')
     {
         $this->apiPath = $apiPath;
         $this->wsPath = $wsPath;
@@ -147,8 +147,11 @@ class RouteOne
     /**
      * It creates and object and calls the method.
      *
-     * @param string $classStructure structure of the class. %s is the name of the controller.<br>
-     *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass
+     * @param string $classStructure structure of the class.<br>
+     *                               The first %s (or %1s) is the name of the controller.<br>
+     *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
+     *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
+     *                               Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
      * @param bool   $throwOnError   if true then it throws an exception. If false then it returns the error (if any)
      *
      * @return string|null null if the operation was correct, or the message of error if it failed.
@@ -156,7 +159,11 @@ class RouteOne
      */
     public function callObject($classStructure = '%sController', $throwOnError = true)
     {
-        $op = sprintf($classStructure, $this->controller);
+        if($this->isModule) {
+            $op = sprintf($classStructure, $this->controller, $this->module);
+        } else {
+            $op = sprintf($classStructure, $this->controller);
+        }
         if (!class_exists($op, true)) {
             if ($throwOnError) {
                 throw new Exception("Class $op doesn't exist");
@@ -324,13 +331,13 @@ class RouteOne
         if ($this->forceType === null) {
             switch ($first) {
                 case $this->apiPath: // [module]/api/controller/action
-                    $id++; // ignores the first one cause it's "api"
+                    $id++; // ignores the first one cause it's 'api'
                     $this->type = 'api';
                     $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
                     $id++;
                     break;
                 case $this->wsPath: // [module]/ws/controller/action
-                    $id++; // ignores the first one cause it's "ws"
+                    $id++; // ignores the first one cause it's 'ws'
                     $this->type = 'ws';
                     $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
                     $id++;
@@ -356,7 +363,7 @@ class RouteOne
                     // it is processed differently.
                     $this->category = @$path[$id++] ?? '';
                     $this->subcategory = @$path[$id++] ?? '';
-                    $this->subsubcategory = @$path[$id+1] ?? '';
+                    $this->subsubcategory = @$path[$id++] ?? '';
                     $this->id = end($path); // id is the last element of the path
                     $this->event = $this->request('_event');
                     $this->extra = $this->request('_extra');
@@ -366,7 +373,7 @@ class RouteOne
         $this->action = @$path[$id++];
         $this->action = ($this->action) ? $this->action : $this->defAction;
         $this->id = @$path[$id++];
-        $this->idparent = @$path[$id+1];
+        $this->idparent = @$path[$id++];
         $this->event = $this->request('_event');
         $this->extra = $this->request('_extra');
     }
