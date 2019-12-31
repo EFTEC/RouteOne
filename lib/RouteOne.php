@@ -90,7 +90,8 @@ class RouteOne
     /**
      * RouteOne constructor.
      *
-     * @param string $base       base url
+     * @param string $base       base url with or without trailing slash (it's removed).<br>
+     *                           Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
      * @param string $forcedType =['api','ws','controller','front'][$i]<br>
      *                           <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
      *                           <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
@@ -102,7 +103,7 @@ class RouteOne
      */
     public function __construct($base = '', $forcedType = null, $isModule = false)
     {
-        $this->base = $base;
+        $this->base =  rtrim($base, '/');
         $this->forceType = $forcedType;
         $this->isModule = $isModule;
         if (@$_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -150,8 +151,10 @@ class RouteOne
      * @param string $classStructure structure of the class.<br>
      *                               The first %s (or %1s) is the name of the controller.<br>
      *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
+     *                               The thrid %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
      *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
      *                               Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
+     *                               Example: namespace/%2s/%3s%/%1sClass it calls namespace/Module/controller/ExampleClass<br>
      * @param bool   $throwOnError   if true then it throws an exception. If false then it returns the error (if any)
      *
      * @return string|null null if the operation was correct, or the message of error if it failed.
@@ -159,11 +162,7 @@ class RouteOne
      */
     public function callObject($classStructure = '%sController', $throwOnError = true)
     {
-        if($this->isModule) {
-            $op = sprintf($classStructure, $this->controller, $this->module);
-        } else {
-            $op = sprintf($classStructure, $this->controller);
-        }
+        $op = sprintf($classStructure, $this->controller, $this->module,$this->type);
         if (!class_exists($op, true)) {
             if ($throwOnError) {
                 throw new Exception("Class $op doesn't exist");
@@ -223,7 +222,7 @@ class RouteOne
         return null;
     }
     /**
-     * Returns the current and real url without traling space or queries/b<br>
+     * Returns the current base url without traling space, paremters or queries/b<br>
      * <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and
      * it could be modified by the end-user
      *
@@ -238,6 +237,12 @@ class RouteOne
         }
         return $this->getCurrentServer() . @$_SERVER['SCRIPT_NAME'];
     }
+
+    /**
+     * It returns the current server without trailing slash.
+     * 
+     * @return string
+     */
     public function getCurrentServer()
     {
         $server_name =@$_SERVER['SERVER_NAME'];
@@ -458,7 +463,7 @@ class RouteOne
         return $url;
     }
     /**
-     *
+     * It returns the current type.
      *
      * @return string
      */
@@ -467,7 +472,7 @@ class RouteOne
         return $this->type;
     }
     /**
-     *
+     * It returns the current name of the module
      *
      * @return string
      */

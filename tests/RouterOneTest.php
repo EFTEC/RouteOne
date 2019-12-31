@@ -24,7 +24,7 @@ class routerOneTest extends TestCase
 
     public function testNewVar()
     {
-        $this->ro=new RouteOne('http://www.example.dom/');
+        $this->ro=new RouteOne('http://www.example.dom');
         $_GET['req']='MyController/Action2/id/parentid';
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
@@ -43,7 +43,7 @@ class routerOneTest extends TestCase
         $_GET['req']='Module/MyController/Action2/id/parentid';
         $_GET['_event']='Event';
         $_GET['_extra']='Extra';
-        $this->ro=new RouteOne('http://www.example.dom/','controller',true);
+        $this->ro=new RouteOne('http://www.example.dom','controller',true);
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
@@ -69,7 +69,7 @@ class routerOneTest extends TestCase
         $_GET['req']='category/subc/subsubc/id';
         $_GET['_event']='Event';
         $_GET['_extra']='Extra';
-        $this->ro=new RouteOne('http://www.example.dom/','front');
+        $this->ro=new RouteOne('http://www.example.dom','front');
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
@@ -97,7 +97,7 @@ class routerOneTest extends TestCase
         $_GET['req']='module/category/subc/subsubc/id';
         $_GET['_event']='Event';
         $_GET['_extra']='Extra';
-        $this->ro=new RouteOne('http://www.example.dom/','front',true);
+        $this->ro=new RouteOne('http://www.example.dom','front',true);
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();

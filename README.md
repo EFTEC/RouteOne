@@ -20,12 +20,12 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
 
 Let's say we do the next operation:
 
-Some users call to the next website http://somedomain.com/Customer/Insert and we want to show a form to insert a customer
+An user calls the next website http://somedomain.com/Customer/Insert, he wants want to show a form to insert a customer
 
 ```php
 $route=new RouteOne('.',null,null); // Create the RouteOneClass
 $route->fetch(); // fetch all the input values (from the route, get, post and such).
-route()->callObject('somenamespace\\controller\\%sController'); // where it will call the  class CustomerController* 
+$route->callObject('somenamespace\\controller\\%sController'); // where it will call the  class CustomerController* 
 ```
 This code calls to the method **InsertActionGet** (GET), **InsertActionPost** (POST) or **InsertAction** (GET/POST)
 inside the class **Customer**
@@ -71,14 +71,12 @@ Now, let's say our system is modular and we have several customers (interna cust
 ```php
 $route=new RouteOne('.',null,true); // true indicates it is modular 
 $route->fetch(); 
-route()->callObject('somenamespace\\%2s%\\controller\\%1sController');
+$route->callObject('somenamespace\\%2s%\\controller\\%1sController');
 ```
 
 > http://somedomain.com/Internal/Customer/Update/20/APPL?_event=click
 
-Then, the first ramification is the name of the module (**Internal**) and it calles the class **somenamespace\Internal\controller\CustomerController**
-
-
+Then, the first ramification is the name of the module (**Internal**) and it calls the class **somenamespace\Internal\controller\CustomerController**
 
 
 ## Getting started
@@ -104,7 +102,7 @@ where test1.php is the file that it will work as router.  ?req=$1 is important b
 // router.php
 $route=new RouteOne(); // Create the RouteOneClass
 $route->fetch(); // fetch all the input values (from the route, get, post and such).
-route()->callObject('somenamespace\\controller\\%sController'); // where it will call the  class \somenamespace\controller\CustomerController  
+$route->callObject('somenamespace\\controller\\%sController'); // where it will call the  class \somenamespace\controller\CustomerController  
 ```
 
 ## Routes
@@ -338,8 +336,70 @@ It calls (include) a php file using the current name of the controller
 * **$fileStructure** The current name of the controller. "%s" is the name of the current controller. Example :/Customer/Insert -> calls the file Customer.php
 * **throwOnError** if true then it throws an error. If false then it only returns the error message.
 
+
+### getCurrentUrl($withoutFilename = true)
+
+Returns the current base url without traling space, paremters or queries
+
+> <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and  it could be modified by the end-user
+
+### getCurrentServer()
+
+It returns the current server without trailing slash.
+
+```php 
+$route->getCurrentServer(); // http://somedomain
+```
+
+### getUrl($extraQuery = '',$includeQuery=false)
+
+It gets the (full) url based in the information in the class.
+
+```php 
+$route->getUrl(); // http://somedomain/controller/action/id
+$route->getUrl('id=20'); // http://somedomain/controller/action/id?id=20
+$route->getUrl('id=20',true); // http://somedomain/controller/action/id?id=20&field=20&field2=40
+```
+
+
+
+## fields
+
+
 ### $isPostBack (field)
 
 if true then the form is called as POST (i.e. a submit button).
 
+### $type 
 
+it returns the current type
+
+> Also obtained via getType()
+
+|type|url expected|description|
+|----|------------|------------|
+| api |domain.dom/api/controller/action/id | {module}\api\controller\action\id\{idparent}?_event=event    |
+| ws |domain.dom/ws/controller/action/id | {module}\ws\controller\action\id\{idparent}?_event=event     |
+| controller |domain.dom/controller/action/id | {module}\controller\action\id\{idparent}?_event=event     |
+| front |domain.dom/cat/subcat/subsubcat/id | {module}\category\subcategory\subsubcategory\id?_event=event    |
+
+Example:
+
+```php 
+$route=new RouteOne('.',null,false);  // null means automatic type
+$route->fetch(); 
+if($route->type==='api') {
+    $route->callObject('somenamespace\\api\\%sApi');
+} else {
+    $route->callObject('somenamespace\\controller\\%sController');
+}
+```
+
+Example:
+
+```php 
+$route=new RouteOne('.',null,false);  // null means automatic type
+$route->fetch(); 
+
+$route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserController , somespace/controller/UserController, etc.
+```
