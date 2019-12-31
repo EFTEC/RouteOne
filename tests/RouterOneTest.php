@@ -118,4 +118,21 @@ class routerOneTest extends TestCase
 
         //$this->ro->callObject();
     }
+
+    public function testNewVar5()
+    {
+        $this->ro=new RouteOne('http://www.example.dom','front');
+        $this->ro->urlFront('mod','cat','subc','subsubc',20);
+        $this->assertEquals('http://www.example.dom/cat/subc/subsubc/20/',$this->ro->getUrl());
+        $this->ro=new RouteOne('http://www.example.dom','front',true);
+        $this->ro->urlFront('mod','cat','subc','subsubc',20);
+        $this->assertEquals('http://www.example.dom/mod/cat/subc/subsubc/20/',$this->ro->getUrl());
+        $this->ro=new RouteOne('http://www.example.dom','controller');
+        $this->ro->url('mod','controller','action',20);
+        $this->assertEquals('http://www.example.dom/controller/action/20/',$this->ro->getUrl());
+        $this->ro=new RouteOne('http://www.example.dom','controller',true);
+        $this->ro->url('mod','controller','action',20);
+        $this->assertEquals('http://www.example.dom/mod/controller/action/20/',$this->ro->getUrl());
+        //$this->ro->callObject();
+    }
 }

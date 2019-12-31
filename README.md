@@ -361,6 +361,21 @@ $route->getUrl('id=20'); // http://somedomain/controller/action/id?id=20
 $route->getUrl('id=20',true); // http://somedomain/controller/action/id?id=20&field=20&field2=40
 ```
 
+### url($module,$controller,$action,$id,$idparent)
+
+It builds an url based in custom values
+
+```php 
+$route->url(null,"Customer","Update",20); // Customer/Update/20
+```
+
+### urlFront($module,$category,$subcategory,$subsubcategory,$id)
+
+It builds an url (front) based in custom values
+
+```php 
+$route->url(null,"Daily","Milk",20); // Daily/Milk/20
+```
 
 
 ## fields

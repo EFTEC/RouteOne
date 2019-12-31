@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.5
+ * @version   1.7
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -66,7 +66,7 @@ class RouteOne
      */
     public $isPostBack = false;
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
-    public $queries=[];
+    public $queries = [];
     /**
      * @var string Default api initial Path
      */
@@ -83,14 +83,12 @@ class RouteOne
     private $defAction;
     private $isModule;
     /** @var string the url fetched */
-    private $urlFetched='';
-
-
+    private $urlFetched = '';
 
     /**
      * RouteOne constructor.
      *
-     * @param string $base       base url with or without trailing slash (it's removed).<br>
+     * @param string $base       base url with or without trailing slash (it's removed if its set).<br>
      *                           Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
      * @param string $forcedType =['api','ws','controller','front'][$i]<br>
      *                           <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
@@ -101,10 +99,12 @@ class RouteOne
      *                           <b>false</b> controller/action/id/idparent<br>
      *                           <b>true</b> module/controller/action/id/idparent<br>
      */
-    public function __construct($base = '', $forcedType = null, $isModule = false)
-    {
-        $this->base =  rtrim($base, '/');
+    public function __construct($base = '', $forcedType = null, $isModule = false) {
+        $this->base = rtrim($base, '/');
         $this->forceType = $forcedType;
+        if($forcedType!==null) {
+            $this->type=$forcedType;
+        }
         $this->isModule = $isModule;
         if (@$_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->isPostBack = true;
@@ -114,44 +114,43 @@ class RouteOne
         $this->setDefaultValues();
         $this->setPath();
     }
+
     /**
-     *
-     *
      * It sets the default controller and action (if they are not entered in the route)<br>
      * It is uses to set a default route.
      *
-     * @param string $defController
-     * @param string $defAction
+     * @param string $defController Default Controller
+     * @param string $defAction Default action
      *
      * @return $this
      */
-    public function setDefaultValues($defController = "Home", $defAction = "index")
-    {
+    public function setDefaultValues($defController = "Home", $defAction = "index") {
         $this->defController = $defController;
         $this->defAction = $defAction;
         return $this;
     }
+
     /**
      * It sets the default root path for api and ws
      *
-     * @param string $apiPath
-     * @param string $wsPath
+     * @param string $apiPath By default the api path is "api"
+     * @param string $wsPath By default the ws path is "ws"
      *
      * @return $this
      */
-    public function setPath($apiPath = 'api', $wsPath = 'ws')
-    {
+    public function setPath($apiPath = 'api', $wsPath = 'ws') {
         $this->apiPath = $apiPath;
         $this->wsPath = $wsPath;
         return $this;
     }
+
     /**
      * It creates and object and calls the method.
      *
      * @param string $classStructure structure of the class.<br>
      *                               The first %s (or %1s) is the name of the controller.<br>
      *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
-     *                               The thrid %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
+     *                               The third %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
      *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
      *                               Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
      *                               Example: namespace/%2s/%3s%/%1sClass it calls namespace/Module/controller/ExampleClass<br>
@@ -160,9 +159,8 @@ class RouteOne
      * @return string|null null if the operation was correct, or the message of error if it failed.
      * @throws Exception
      */
-    public function callObject($classStructure = '%sController', $throwOnError = true)
-    {
-        $op = sprintf($classStructure, $this->controller, $this->module,$this->type);
+    public function callObject($classStructure = '%sController', $throwOnError = true) {
+        $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
         if (!class_exists($op, true)) {
             if ($throwOnError) {
                 throw new Exception("Class $op doesn't exist");
@@ -196,18 +194,23 @@ class RouteOne
         }
         return null;
     }
+
     /**
      * It calls (include) a file using the current controller.
      *
-     * @param string $fileStructure
+     * @param string $fileStructure It uses sprintf<br>
+     *                               The first %s (or %1s) is the name of the controller.<br>
+     *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
+     *                               The third %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
+     *                              Example %s.php => controllername.php<br>
+     *                              Example %s3s%/%1s.php => controller/controllername.php
      * @param bool   $throwOnError
      *
      * @return string|null
      * @throws Exception
      */
-    public function callFile($fileStructure = '%s.php', $throwOnError = true)
-    {
-        $op = sprintf($fileStructure, $this->controller);
+    public function callFile($fileStructure = '%s.php', $throwOnError = true) {
+        $op = sprintf($fileStructure, $this->controller,$this->module,$this->type);
         try {
             /**
              * @noinspection PhpIncludeInspection
@@ -221,6 +224,7 @@ class RouteOne
         }
         return null;
     }
+
     /**
      * Returns the current base url without traling space, paremters or queries/b<br>
      * <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and
@@ -230,8 +234,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getCurrentUrl($withoutFilename = true)
-    {
+    public function getCurrentUrl($withoutFilename = true) {
         if ($withoutFilename) {
             return dirname($this->getCurrentServer() . @$_SERVER['SCRIPT_NAME']);
         }
@@ -240,13 +243,12 @@ class RouteOne
 
     /**
      * It returns the current server without trailing slash.
-     * 
+     *
      * @return string
      */
-    public function getCurrentServer()
-    {
-        $server_name =@$_SERVER['SERVER_NAME'];
-        $port = !in_array(@$_SERVER['SERVER_PORT'], [80, 443]) ? ":".@$_SERVER['SERVER_PORT']."" : '';
+    public function getCurrentServer() {
+        $server_name = @$_SERVER['SERVER_NAME'];
+        $port = !in_array(@$_SERVER['SERVER_PORT'], [80, 443]) ? ":" . @$_SERVER['SERVER_PORT'] . "" : '';
         if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) == 'on' || @$_SERVER['HTTPS'] == '1')) {
             $scheme = 'https';
         } else {
@@ -254,8 +256,9 @@ class RouteOne
         }
         return $scheme . '://' . $server_name . $port;
     }
+
     /**
-     * It builds an url using some values
+     * It builds an url using custom values.
      *
      * @param null $module     Name of the module
      * @param null $controller Name of the controller.
@@ -291,8 +294,35 @@ class RouteOne
         $this->event = null;
         return $this;
     }
-    public function reset()
-    {
+
+    public function urlFront(
+        $module = null,
+        $category = null,
+        $subcategory = null,
+        $subsubcategory = null,
+        $id = null
+    ) {
+        if ($module) {
+            $this->module = $module;
+        }
+        if ($category) {
+            $this->category = $category;
+        }
+        if ($subcategory) {
+            $this->subcategory = $subcategory;
+        }
+        if ($subsubcategory) {
+            $this->subsubcategory = $subsubcategory;
+        }
+        if ($id) {
+            $this->id = $id;
+        }
+        $this->extra = null;
+        $this->event = null;
+        return $this;
+    }
+    
+    public function reset() {
         // $this->base=''; base is always keep
         $this->defController = '';
         $this->forceType = null;
@@ -318,10 +348,9 @@ class RouteOne
      *  Module/ws/ControllerWS/action/id/idparent/?_event=xx&extra=xxx
      * .htaccess = RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]<br>
      */
-    public function fetch()
-    {
-        $this->urlFetched=@$_GET['req']; // controller/action/id/..
-        $this->queries=$_GET;
+    public function fetch() {
+        $this->urlFetched = @$_GET['req']; // controller/action/id/..
+        $this->queries = $_GET;
         unset($this->queries['req']);
         unset($this->queries['_event']);
         unset($this->queries['_extra']);
@@ -382,8 +411,8 @@ class RouteOne
         $this->event = $this->request('_event');
         $this->extra = $this->request('_extra');
     }
-    private function request($id, $numeric = false, $default = null)
-    {
+
+    private function request($id, $numeric = false, $default = null) {
         $v = isset($_POST[$id]) ? $_POST[$id] : (isset($_GET[$id]) ? $_GET[$id] : $default);
         if ($numeric && is_numeric($v)) {
             return $v;
@@ -399,13 +428,12 @@ class RouteOne
      * <b>Note:<b>. It discards any information outside of the type
      * (/controller/action/id/idparent/<cutcontent>?arg=1&arg=2)
      *
-     * @param string $extraQuery If we want to add extra queries
+     * @param string $extraQuery   If we want to add extra queries
      * @param bool   $includeQuery If true then it includes the queries in $this->queries
      *
      * @return string
      */
-    public function getUrl($extraQuery = '',$includeQuery=false)
-    {
+    public function getUrl($extraQuery = '', $includeQuery = false) {
         $url = $this->base . '/';
         if ($this->isModule) {
             $url .= $this->module . '/';
@@ -432,13 +460,13 @@ class RouteOne
                 return $url;
                 break;
             default:
-                trigger_error('type not defined');
+                trigger_error('type ['.$this->type.'] not defined');
                 break;
         }
         $url .= $this->controller . '/';
         $url .= $this->action . '/';
         //if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
-        $sepQuery='?';
+        $sepQuery = '?';
         if ($this->id !== null || $this->idparent !== null) {
             $url .= $this->id . '/';
         }
@@ -447,66 +475,69 @@ class RouteOne
         }
         if ($this->event) {
             $url .= '?_event=' . $this->event;
-            $sepQuery='&';
+            $sepQuery = '&';
         }
         if ($this->extra) {
-            $url .=$sepQuery.'_extra=' . $this->extra;
-            $sepQuery='&';
+            $url .= $sepQuery . '_extra=' . $this->extra;
+            $sepQuery = '&';
         }
         if ($extraQuery) {
             $url .= $sepQuery . $extraQuery;
-            $sepQuery='&';
+            $sepQuery = '&';
         }
-        if($includeQuery && count($this->queries)) {
-            $url.=$sepQuery.http_build_query($this->queries);
+        if ($includeQuery && count($this->queries)) {
+            $url .= $sepQuery . http_build_query($this->queries);
         }
         return $url;
     }
+
     /**
      * It returns the current type.
      *
      * @return string
      */
-    public function getType()
-    {
+    public function getType() {
         return $this->type;
     }
+
     /**
      * It returns the current name of the module
      *
      * @return string
      */
-    public function getModule()
-    {
+    public function getModule() {
         return $this->module;
     }
 
     /**
-     * @param string $key
+     * @param string     $key
      * @param null|mixed $valueIfNotFound
      *
      * @return mixed
      */
-    public function getQuery($key,$valueIfNotFound=null) {
-        return (isset($this->queries[$key]))? $this->queries[$key] : $valueIfNotFound;
+    public function getQuery($key, $valueIfNotFound = null) {
+        return (isset($this->queries[$key])) ? $this->queries[$key] : $valueIfNotFound;
     }
+
     /**
      * It sets a query value
-     * @param string $key
+     *
+     * @param string     $key
      * @param null|mixed $value
      */
-    public function setQuery($key,$value) {
-        $this->queries[$key]=$value;
+    public function setQuery($key, $value) {
+        $this->queries[$key] = $value;
     }
+
     /**
      * It returns the current name of the controller.
      *
      * @return string
      */
-    public function getController()
-    {
+    public function getController() {
         return $this->controller;
     }
+
     /**
      *
      *
@@ -514,20 +545,20 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setController($controller)
-    {
+    public function setController($controller) {
         $this->controller = $controller;
         return $this;
     }
+
     /**
      *
      *
      * @return string
      */
-    public function getAction()
-    {
+    public function getAction() {
         return $this->action;
     }
+
     /**
      *
      *
@@ -535,20 +566,20 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setAction($action)
-    {
+    public function setAction($action) {
         $this->action = $action;
         return $this;
     }
+
     /**
      *
      *
      * @return string
      */
-    public function getId()
-    {
+    public function getId() {
         return $this->id;
     }
+
     /**
      *
      *
@@ -556,20 +587,20 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setId($id)
-    {
+    public function setId($id) {
         $this->id = $id;
         return $this;
     }
+
     /**
      *
      *
      * @return string
      */
-    public function getEvent()
-    {
+    public function getEvent() {
         return $this->event;
     }
+
     /**
      *
      *
@@ -577,20 +608,20 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setEvent($event)
-    {
+    public function setEvent($event) {
         $this->event = $event;
         return $this;
     }
+
     /**
      *
      *
      * @return string
      */
-    public function getIdparent()
-    {
+    public function getIdparent() {
         return $this->idparent;
     }
+
     /**
      *
      *
@@ -598,45 +629,44 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setIdParent($idParent)
-    {
+    public function setIdParent($idParent) {
         $this->idparent = $idParent;
         return $this;
     }
+
     /**
      *
      *
      * @return string
      */
-    public function getExtra()
-    {
+    public function getExtra() {
         return $this->extra;
     }
+
     /**
      *
      *
      * @return mixed
      */
-    public function getCategory()
-    {
+    public function getCategory() {
         return $this->category;
     }
+
     /**
      *
      *
      * @return mixed
      */
-    public function getSubcategory()
-    {
+    public function getSubcategory() {
         return $this->subcategory;
     }
+
     /**
      *
      *
      * @return mixed
      */
-    public function getSubsubcategory()
-    {
+    public function getSubsubcategory() {
         return $this->subsubcategory;
     }
 }
