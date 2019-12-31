@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !-f
+RewriteCond %{REQUEST_URI} !-d
+RewriteCond %{REQUEST_URI} !-L
+# l = last
+RewriteRule ^(example|test|css|vendors|vendor|js|img|upload)($|/) - [L]
+RewriteRule ^(autorunGen.php|autoload.php)($|/) - [L]
+
+RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]
+
+</IfModule>
