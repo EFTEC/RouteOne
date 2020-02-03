@@ -35,6 +35,9 @@ class routerOneTest extends TestCase
         $this->assertEquals("parentid", $this->ro->getIdparent());
         $this->assertEquals("MyController", $this->ro->getController());
         $this->ro->callFile(dirname(__FILE__).'/%s.php');
+        
+        $this->assertEquals('http://www.example.dom/dummy.php',$this->ro->getNonRouteUrl('dummy.php'));
+        
         //$this->ro->callObject();
     }
     public function testNewVar2()
