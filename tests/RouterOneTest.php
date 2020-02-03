@@ -39,7 +39,6 @@ class routerOneTest extends TestCase
     }
     public function testNewVar2()
     {
-        
         $_GET['req']='Module/MyController/Action2/id/parentid';
         $_GET['_event']='Event';
         $_GET['_extra']='Extra';
@@ -55,11 +54,16 @@ class routerOneTest extends TestCase
         $this->assertEquals("Module", $this->ro->getModule());
         $this->assertEquals("Event", $this->ro->getEvent());
         $this->assertEquals("Extra", $this->ro->getExtra());
+        $this->assertEquals(false, $this->ro->isPostBack());
         $this->ro->setController("");
         $this->ro->setAction("");
         $this->ro->setId("");
         $this->ro->setEvent("");
         $this->ro->setIdParent("");
+        $this->ro->setExtra("");
+        $this->ro->setIsPostBack(false);
+        
+        $this->assertEquals('http://www.example.dom/Module////',$this->ro->getUrl('',false));
  
         //$this->ro->callObject();
     }

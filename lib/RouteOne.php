@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.7
+ * @version   1.8
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -65,6 +65,8 @@ class RouteOne
      * @var boolean
      */
     public $isPostBack = false;
+
+
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
     /**
@@ -397,6 +399,7 @@ class RouteOne
                     // it is processed differently.
                     $this->category = @$path[$id++] ?? '';
                     $this->subcategory = @$path[$id++] ?? '';
+                    /** @noinspection PhpUnusedLocalVariableInspection */
                     $this->subsubcategory = @$path[$id++] ?? '';
                     $this->id = end($path); // id is the last element of the path
                     $this->event = $this->request('_event');
@@ -407,6 +410,7 @@ class RouteOne
         $this->action = @$path[$id++];
         $this->action = ($this->action) ? $this->action : $this->defAction;
         $this->id = @$path[$id++];
+        /** @noinspection PhpUnusedLocalVariableInspection */
         $this->idparent = @$path[$id++];
         $this->event = $this->request('_event');
         $this->extra = $this->request('_extra');
@@ -423,6 +427,19 @@ class RouteOne
         return $default;
     }
 
+    /**
+     * It returns a non route url based in the base url.<br>
+     * <b>Example:</b><br>
+     * $this->getNonRouteUrl('login.php'); // http://baseurl.com/login.php
+     * 
+     * @param string $urlPart
+     *
+     * @return string
+     * @see \eftec\routeone\RouteOne::$base              
+     */
+    public function getNonRouteUrl($urlPart) {
+        return $this->base.'/'.$urlPart;
+    }
     /**
      * It reconstruct an url using the current information.<br>
      * <b>Note:<b>. It discards any information outside of the type
@@ -463,25 +480,24 @@ class RouteOne
                 trigger_error('type ['.$this->type.'] not defined');
                 break;
         }
-        $url .= $this->controller . '/';
-        $url .= $this->action . '/';
-        //if ($this->id!==null && $this->idparent!==null) $url.=$this->id.'/';
+        $url .= $this->controller . '/'; // Controller is always visible, even if it is empty
+        $url .= $this->action . '/'; // action is always visible, even if it is empty
         $sepQuery = '?';
-        if ($this->id !== null || $this->idparent !== null) {
-            $url .= $this->id . '/';
+        if (($this->id !== null && $this->id !== '') || $this->idparent !== null) {
+            $url .= $this->id . '/'; // id is visible if id is not empty or if idparent is not empty.
         }
-        if ($this->idparent !== null) {
-            $url .= $this->idparent . '/';
+        if ( $this->idparent !== null && $this->idparent !== '') {
+            $url .= $this->idparent . '/'; // idparent is only visible if it is not empty (zero is not empty)
         }
-        if ($this->event) {
+        if ($this->event!==null && $this->event !== '') {
             $url .= '?_event=' . $this->event;
             $sepQuery = '&';
         }
-        if ($this->extra) {
+        if ($this->extra!==null && $this->extra !== '') {
             $url .= $sepQuery . '_extra=' . $this->extra;
             $sepQuery = '&';
         }
-        if ($extraQuery) {
+        if ($extraQuery!==null && $extraQuery!== '') {
             $url .= $sepQuery . $extraQuery;
             $sepQuery = '&';
         }
@@ -623,8 +639,6 @@ class RouteOne
     }
 
     /**
-     *
-     *
      * @param  $idParent
      *
      * @return RouteOne
@@ -635,6 +649,17 @@ class RouteOne
     }
 
     /**
+     * @param string $extra
+     *
+     * @return RouteOne
+     */
+    public function setExtra($extra) {
+        $this->extra = $extra;
+        return $this;
+    }
+    
+    
+    /**
      *
      *
      * @return string
@@ -642,6 +667,7 @@ class RouteOne
     public function getExtra() {
         return $this->extra;
     }
+
 
     /**
      *
@@ -669,4 +695,20 @@ class RouteOne
     public function getSubsubcategory() {
         return $this->subsubcategory;
     }
+    /**
+     * @return bool
+     */
+    public function isPostBack(): bool {
+        return $this->isPostBack;
+    }
+
+    /**
+     * @param bool $isPostBack
+     *
+     * @return RouteOne
+     */
+    public function setIsPostBack(bool $isPostBack): RouteOne {
+        $this->isPostBack = $isPostBack;
+        return $this;
+    }    
 }

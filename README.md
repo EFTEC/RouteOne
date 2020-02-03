@@ -11,7 +11,7 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
 [![Build Status](https://travis-ci.org/EFTEC/RouteOne.svg?branch=master)](https://travis-ci.org/EFTEC/RouteOne)
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
-[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
 [![php](https://img.shields.io/badge/php-7.x-green.svg)]()
 [![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
@@ -418,3 +418,12 @@ $route->fetch();
 
 $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserController , somespace/controller/UserController, etc.
 ```
+
+## Changelog
+
+* 2020-02-03 1.8
+    * new method getNonRouteUrl()
+    * new method setExtra()
+    * new method isPostBack()
+    * new method setIsPostBack()
+    * Some fixes for getUrl() 
