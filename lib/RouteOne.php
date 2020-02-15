@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.8
+ * @version   1.9 2020-02-15
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -66,7 +66,6 @@ class RouteOne
      */
     public $isPostBack = false;
 
-
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
     /**
@@ -104,8 +103,8 @@ class RouteOne
     public function __construct($base = '', $forcedType = null, $isModule = false) {
         $this->base = rtrim($base, '/');
         $this->forceType = $forcedType;
-        if($forcedType!==null) {
-            $this->type=$forcedType;
+        if ($forcedType !== null) {
+            $this->type = $forcedType;
         }
         $this->isModule = $isModule;
         if (@$_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -122,7 +121,7 @@ class RouteOne
      * It is uses to set a default route.
      *
      * @param string $defController Default Controller
-     * @param string $defAction Default action
+     * @param string $defAction     Default action
      *
      * @return $this
      */
@@ -136,7 +135,7 @@ class RouteOne
      * It sets the default root path for api and ws
      *
      * @param string $apiPath By default the api path is "api"
-     * @param string $wsPath By default the ws path is "ws"
+     * @param string $wsPath  By default the ws path is "ws"
      *
      * @return $this
      */
@@ -147,22 +146,49 @@ class RouteOne
     }
 
     /**
-     * It creates and object and calls the method.
+     * It creates and object (for example, a Controller object) and calls the method.<br>
+     * <b>Example:</b> (type controller,api,ws)
+     * <pre>
+     * $this->callObject('cocacola\controller\%sController'); // %s is replaced by the name of the current controller
+     * $this->callObject('namespace/%2s/%1sClass'); // it calls namespace/Module/ExampleClass (only if module is able)
+     * $this->callObject('namespace/%2s/%3s%/%1sClass'); // %3s is for the type of path
+     * </pre>
+     * <b>Note:</b> The method called should be written as (static or not)<br>
+     * <pre>
+     * public function *nameaction*Action($id="",$idparent="",$event="") { }
+     * </pre>
      *
      * @param string $classStructure structure of the class.<br>
-     *                               The first %s (or %1s) is the name of the controller.<br>
-     *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
-     *                               The third %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
-     *                               Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
-     *                               Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
-     *                               Example: namespace/%2s/%3s%/%1sClass it calls namespace/Module/controller/ExampleClass<br>
-     * @param bool   $throwOnError   if true then it throws an exception. If false then it returns the error (if any)
+     *                               <b>Type=controller,api,ws</b><br>
+     *                               The <b>first %s</b> (or %1s) is the name of the controller.<br>
+     *                               The <b>second %s</b> (or %2s) is the name of the module (if any and if ->isModule=true)<br>
+     *                               The <b>third %s</b> (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
+     *                               <b>Type=front</b><br>
+     *                               The <b>first %s</b> (or %1s) is the name of the category.<br>
+     *                               The <b>second %s</b> (or %2s) is the name of the subcategory<br>
+     *                               The <b>third %s</b> (or %3s) is the type of the subsubcategory<br>
+     * @param bool   $throwOnError   [optional] Default:true,  if true then it throws an exception. If false then it returns the error (if any)
+     * @param string $method         [optional] Default value='%sAction'. The name of the method to call (get/post).
+     *                               If method does not exists then it will use $methodGet or $methodPost
+     * @param string $methodGet      [optional] Default value='%sAction'. The name of the method to call (get) but only
+     *                               if the method defined by $method is not defined.
+     * @param string $methodPost     [optional] Default value='%sAction'. The name of the method to call (post) but only
+     *                               if the method defined by $method is not defined.
+     * @param array  $arguments      [optional] Default value=['id','idparent','event'] the arguments to pass to the function
      *
      * @return string|null null if the operation was correct, or the message of error if it failed.
      * @throws Exception
      */
-    public function callObject($classStructure = '%sController', $throwOnError = true) {
-        $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
+    public function callObject(
+        $classStructure = '%sController', $throwOnError = true
+        , $method = '%sAction', $methodGet = '%sActionGet', $methodPost = '%sActionPost'
+        ,$arguments=['id','idparent','event']
+    ) {
+        if ($this->type != 'front') {
+            $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
+        } else {
+            $op = sprintf($classStructure, $this->category, $this->subcategory, $this->subsubcategory);
+        }
         if (!class_exists($op, true)) {
             if ($throwOnError) {
                 throw new Exception("Class $op doesn't exist");
@@ -171,22 +197,47 @@ class RouteOne
         }
         try {
             $controller = new $op();
-            $actionRequest = $this->action . 'Action';
-            $actionGetPost = (!$this->isPostBack) ? $this->action . 'ActionGet' : $this->action . 'ActionPost';
+            if ($this->type != 'front') {
+                $actionRequest = sprintf($method, $this->action);
+            } else {
+                $actionRequest = sprintf($method, $this->subcategory, $this->subsubcategory);
+            }
+            $actionGetPost = (!$this->isPostBack) ? sprintf($methodGet, $this->action)
+                : sprintf($methodPost, $this->action);
         } catch (Exception $ex) {
             if ($throwOnError) {
                 throw $ex;
             }
             return $ex->getMessage();
         }
+
+        $args = [];
+        foreach ($arguments as $a) {
+            $args[] = $this->{$a};
+        }
         if (method_exists($controller, $actionRequest)) {
-            $controller->{$actionRequest}($this->id, $this->idparent, $this->event);
+            try {
+                $controller->{$actionRequest}(...$args);
+            } catch (Exception $ex) {
+                if ($throwOnError) {
+                    throw $ex;
+                }
+                return $ex->getMessage();
+            }
         } else {
             if (method_exists($controller, $actionGetPost)) {
-                $controller->{$actionGetPost}($this->id, $this->idparent, $this->event);
+                try {
+                    $controller->{$actionGetPost}(...$args);
+                } catch (Exception $ex) {
+                    if ($throwOnError) {
+                        throw $ex;
+                    }
+                    return $ex->getMessage();
+                }
             } else {
                 $pb = $this->isPostBack ? "(POST)" : "(GET)";
-                $msgError = "Incorrect action [{$this->action}] $pb for [{$this->controller}]";
+                $msgError = "Action [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+                $msgError=strip_tags($msgError);
                 if ($throwOnError) {
                     throw new UnexpectedValueException($msgError);
                 } else {
@@ -198,21 +249,139 @@ class RouteOne
     }
 
     /**
+     * It creates and object (for example, a Controller object) and calls the method.<br>
+     * Note: It is an advanced version of this::callObject()<br>
+     * This method uses {} to replace values.<br>
+     * <ul>
+     * <li><b>{controller}</b> The name of the controller</li>
+     * <li><b>{action}</b> The current action</li>
+     * <li><b>{event}</b> The current event</li>
+     * <li><b>{type}</b> The current type of path (ws,controller,front,api)</li>
+     * <li><b>{module}</b> The current module (if module is active)</li>
+     * <li><b>{id}</b> The current id</li>
+     * <li><b>{idparent}</b> The current idparent</li>
+     * <li><b>{category}</b> The current category</li>
+     * <li><b>{subcategory}</b> The current subcategory</li>
+     * <li><b>{subsubcategory}</b> The current subsubcategory</li>
+     * </ul>
+     * <b>Example:</b>
+     * <pre>
+     * // controller example http://somedomain/Customer/Insert/23
+     * $this->callObjectEx('cocacola\controller\{controller}Controller');
+     * // it calls the method cocacola\controller\Customer::InsertAction(23,'','');
+     *
+     * // front example: http://somedomain/product/coffee/nescafe/1
+     * $this->callObjectEx('cocacola\controller\{category}Controller',false,'{subcategory}',null,null,['subsubcategory','id']);
+     * // it calls the method cocacola\controller\product::coffee('nescafe','1');
+     * </pre>
+     *
+     * @param string $classStructure [optional] Default value='{controller}Controller'
+     * @param bool   $throwOnError   [optional] Default:true,  if true then it throws an exception. If false then it returns the error (if any)
+     * @param string $method         [optional] Default value='{action}Action'. The name of the method to call (get/post).
+     *                               If method does not exists then it will use $methodGet or $methodPost
+     * @param string $methodGet      [optional] Default value='{action}Action'. The name of the method to call (get) but only
+     *                               if the method defined by $method is not defined.
+     * @param string $methodPost     [optional] Default value='{action}Action'. The name of the method to call (post) but only
+     *                               if the method defined by $method is not defined.
+     * @param array  $arguments      [optional] Default value=['id','idparent','event'] the arguments to pass to the function
+     *
+     * @return string|null
+     * @throws Exception
+     */
+    public function callObjectEx(
+        $classStructure = '{controller}Controller', $throwOnError = true
+        , $method = '{action}Action', $methodGet = '{action}ActionGet'
+        , $methodPost = '{action}ActionPost', $arguments = ['id', 'idparent', 'event']
+    ) {
+        $op = $this->replaceNamed($classStructure);
+        if (!class_exists($op, true)) {
+            if ($throwOnError) {
+                throw new Exception("Class $op doesn't exist");
+            }
+            return "Class $op doesn't exist";
+        }
+        try {
+            $controller = new $op();
+            $actionRequest = $this->replaceNamed($method);
+            $actionGetPost = (!$this->isPostBack) ? $this->replaceNamed($methodGet)
+                : $this->replaceNamed($methodPost);
+        } catch (Exception $ex) {
+            if ($throwOnError) {
+                throw $ex;
+            }
+            return $ex->getMessage();
+        }
+        $args = [];
+        foreach ($arguments as $a) {
+            $args[] = $this->{$a};
+        }
+        if (method_exists($controller, $actionRequest)) {
+            try {
+                $controller->{$actionRequest}(...$args);
+            } catch (Exception $ex) {
+                if ($throwOnError) {
+                    throw $ex;
+                }
+                return $ex->getMessage();
+            }
+        } else {
+            if (method_exists($controller, $actionGetPost)) {
+                try {
+                    $controller->{$actionGetPost}(...$args);
+                } catch (Exception $ex) {
+                    if ($throwOnError) {
+                        throw $ex;
+                    }
+                    return $ex->getMessage();
+                }
+            } else {
+                $pb = $this->isPostBack ? "(POST)" : "(GET)";
+                $msgError = "Action ex [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+                $msgError=strip_tags($msgError); 
+                if ($throwOnError) {
+                    throw new UnexpectedValueException($msgError);
+                } else {
+                    return $msgError;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Return a formatted string like vsprintf() with named placeholders.
+     *
+     * When a placeholder doesn't have a matching key in `$args`,
+     *   the placeholder is returned as is to see missing args.
+     *
+     * @param string $format
+     * @param string $pattern
+     *
+     * @return string
+     */
+    private function replaceNamed($format, $pattern = "/\{(\w+)\}/") {
+        return preg_replace_callback($pattern, function ($matches) {
+            $nameField = $matches[1];
+            return @$this->{$nameField} ?: $matches[0];
+        }, $format);
+    }
+
+    /**
      * It calls (include) a file using the current controller.
      *
-     * @param string $fileStructure It uses sprintf<br>
+     * @param string $fileStructure  It uses sprintf<br>
      *                               The first %s (or %1s) is the name of the controller.<br>
      *                               The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
      *                               The third %s (or %3s) is the type of the path (i.e. controller,api,ws,front)<br>
-     *                              Example %s.php => controllername.php<br>
-     *                              Example %s3s%/%1s.php => controller/controllername.php
+     *                               Example %s.php => controllername.php<br>
+     *                               Example %s3s%/%1s.php => controller/controllername.php
      * @param bool   $throwOnError
      *
      * @return string|null
      * @throws Exception
      */
     public function callFile($fileStructure = '%s.php', $throwOnError = true) {
-        $op = sprintf($fileStructure, $this->controller,$this->module,$this->type);
+        $op = sprintf($fileStructure, $this->controller, $this->module, $this->type);
         try {
             /**
              * @noinspection PhpIncludeInspection
@@ -323,7 +492,7 @@ class RouteOne
         $this->event = null;
         return $this;
     }
-    
+
     public function reset() {
         // $this->base=''; base is always keep
         $this->defController = '';
@@ -431,15 +600,16 @@ class RouteOne
      * It returns a non route url based in the base url.<br>
      * <b>Example:</b><br>
      * $this->getNonRouteUrl('login.php'); // http://baseurl.com/login.php
-     * 
+     *
      * @param string $urlPart
      *
      * @return string
-     * @see \eftec\routeone\RouteOne::$base              
+     * @see \eftec\routeone\RouteOne::$base
      */
     public function getNonRouteUrl($urlPart) {
-        return $this->base.'/'.$urlPart;
+        return $this->base . '/' . $urlPart;
     }
+
     /**
      * It reconstruct an url using the current information.<br>
      * <b>Note:<b>. It discards any information outside of the type
@@ -477,7 +647,7 @@ class RouteOne
                 return $url;
                 break;
             default:
-                trigger_error('type ['.$this->type.'] not defined');
+                trigger_error('type [' . $this->type . '] not defined');
                 break;
         }
         $url .= $this->controller . '/'; // Controller is always visible, even if it is empty
@@ -486,18 +656,18 @@ class RouteOne
         if (($this->id !== null && $this->id !== '') || $this->idparent !== null) {
             $url .= $this->id . '/'; // id is visible if id is not empty or if idparent is not empty.
         }
-        if ( $this->idparent !== null && $this->idparent !== '') {
+        if ($this->idparent !== null && $this->idparent !== '') {
             $url .= $this->idparent . '/'; // idparent is only visible if it is not empty (zero is not empty)
         }
-        if ($this->event!==null && $this->event !== '') {
+        if ($this->event !== null && $this->event !== '') {
             $url .= '?_event=' . $this->event;
             $sepQuery = '&';
         }
-        if ($this->extra!==null && $this->extra !== '') {
+        if ($this->extra !== null && $this->extra !== '') {
             $url .= $sepQuery . '_extra=' . $this->extra;
             $sepQuery = '&';
         }
-        if ($extraQuery!==null && $extraQuery!== '') {
+        if ($extraQuery !== null && $extraQuery !== '') {
             $url .= $sepQuery . $extraQuery;
             $sepQuery = '&';
         }
@@ -649,17 +819,6 @@ class RouteOne
     }
 
     /**
-     * @param string $extra
-     *
-     * @return RouteOne
-     */
-    public function setExtra($extra) {
-        $this->extra = $extra;
-        return $this;
-    }
-    
-    
-    /**
      *
      *
      * @return string
@@ -668,6 +827,15 @@ class RouteOne
         return $this->extra;
     }
 
+    /**
+     * @param string $extra
+     *
+     * @return RouteOne
+     */
+    public function setExtra($extra) {
+        $this->extra = $extra;
+        return $this;
+    }
 
     /**
      *
@@ -695,6 +863,7 @@ class RouteOne
     public function getSubsubcategory() {
         return $this->subsubcategory;
     }
+
     /**
      * @return bool
      */
@@ -710,5 +879,5 @@ class RouteOne
     public function setIsPostBack(bool $isPostBack): RouteOne {
         $this->isPostBack = $isPostBack;
         return $this;
-    }    
+    }
 }

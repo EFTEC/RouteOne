@@ -27,6 +27,16 @@ $route=new RouteOne('.',null,null); // Create the RouteOneClass
 $route->fetch(); // fetch all the input values (from the route, get, post and such).
 $route->callObject('somenamespace\\controller\\%sController'); // where it will call the  class CustomerController* 
 ```
+
+or
+
+```php
+$route=new RouteOne('.',null,null); // Create the RouteOneClass
+$route->fetch(); // fetch all the input values (from the route, get, post and such).
+$route->callObjectEx('somenamespace\\controller\\{controller}Controller'); // where it will call the  class CustomerController* 
+```
+
+
 This code calls to the method **InsertActionGet** (GET), **InsertActionPost** (POST) or **InsertAction** (GET/POST)
 inside the class **Customer**
 
@@ -329,6 +339,37 @@ The name of the method is obtained via the current **action**
 2) Otherwise, if $istpostback=false then it calls the method **{nameaction}ActionGet**
 3) Otherwise, if $istpostback=true then it calls the method **{nameaction}ActionPost**
 
+### callObjectEx($classStructure, $throwOnError, $method, $methodGet, $methodPost,$arguments
+
+It creates and object (for example, a Controller object) and calls the method.<br>
+Note: It is an advanced version of this::callObject()<br>
+This method uses {} to replace values.<br>
+<ul>
+<li><b>{controller}</b> The name of the controller</li>
+<li><b>{action}</b> The current action</li>
+<li><b>{event}</b> The current event</li>
+<li><b>{type}</b> The current type of path (ws,controller,front,api)</li>
+<li><b>{module}</b> The current module (if module is active)</li>
+<li><b>{id}</b> The current id</li>
+<li><b>{idparent}</b> The current idparent</li>
+<li><b>{category}</b> The current category</li>
+<li><b>{subcategory}</b> The current subcategory</li>
+<li><b>{subsubcategory}</b> The current subsubcategory</li>
+</ul>
+<b>Example:</b> 
+
+```php
+// controller example http://somedomain/Customer/Insert/23
+$this->callObjectEx('cocacola\controller\{controller}Controller');
+// it calls the method cocacola\controller\Customer::InsertAction(23,'','');
+
+// front example: http://somedomain/product/coffee/nescafe/1
+$this->callObjectEx('cocacola\controller\{category}Controller',false,'{subcategory}',null,null,['subsubcategory','id']);
+// it calls the method cocacola\controller\product::coffee('nescafe','1');
+```
+
+Call a method inside an object using the current route.
+
 ### callFile($fileStructure='%s.php',$throwOnError=true)
 
 It calls (include) a php file using the current name of the controller
@@ -421,6 +462,9 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-02-15 1.9
+    * added new arguments to callObject()
+    * new method callObjectEx()
 * 2020-02-03 1.8
     * new method getNonRouteUrl()
     * new method setExtra()

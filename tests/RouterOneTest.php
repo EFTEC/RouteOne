@@ -4,6 +4,11 @@ namespace eftec\tests;
 
 use eftec\routeone\RouteOne;
 use PHPUnit\Framework\TestCase;
+class categoryController {
+    public function actiontestAction($id,$idparent='',$event='') {
+        echo "action test called";
+    }
+}
 
 /**
  * Class RouterOneTest
@@ -21,7 +26,9 @@ class routerOneTest extends TestCase
         
     }
 
-
+    /**
+     * @throws \Exception
+     */
     public function testNewVar()
     {
         $this->ro=new RouteOne('http://www.example.dom');
@@ -39,6 +46,30 @@ class routerOneTest extends TestCase
         $this->assertEquals('http://www.example.dom/dummy.php',$this->ro->getNonRouteUrl('dummy.php'));
         
         //$this->ro->callObject();
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testCall() {
+        $this->ro=new RouteOne('http://www.example.dom');
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+        $r=$this->ro->callObject('eftec\tests\%sController');
+        $this->assertEquals(null,$r,'no error'); 
+        $r=$this->ro->callObjectEx('eftec\tests\{controller}Controller',true,'{action}Action',null,null
+            ,['id']);
+        $this->assertEquals(null,$r,'no error');
+        $r=$this->ro->callObjectEx('eftec\tests\{controller}ControllerX',false,'{action}Action',null,null
+            ,['id']);
+        $this->assertEquals('Class eftec\tests\categoryControllerX doesn\'t exist',$r,'error');
+        $r=$this->ro->callObjectEx('eftec\tests\{controller}Controller',false,'{action}ActionX',null,null
+            ,['id']);
+        $this->assertEquals('Action ex [actiontestActionX or ] (GET) not found for class [eftec\tests\categoryController]'
+            ,$r,'error');
+        $this->ro->setAction("");
+        $this->ro->setController("");
+
     }
     public function testNewVar2()
     {
@@ -122,8 +153,6 @@ class routerOneTest extends TestCase
         $this->assertEquals("def",$this->ro->getQuery('id','def'));
         $this->ro->setQuery('id','123');
         $this->assertEquals("123",$this->ro->getQuery('id','def'));
-
-        //$this->ro->callObject();
     }
 
     public function testNewVar5()
