@@ -5,7 +5,11 @@ It reads the url route and parses the values, so it could be interpreted manuall
 
 Unlikely other libraries, this library does not have dependencies and it is contained in a single class.  
 
-This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it fixes the functionality.  In this case, this library does not allow to change the "route" but it covers practically all cases, so it increases the performance and usability while it sacrifices flexibility.
+This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it has fixed 
+functionalities.  This library does not allow to change the "route" but it covers practically all cases, so it 
+increases the performance and usability while it sacrifices flexibility.
+
+This library is also as fast as possible and slim as possible.
 
 
 [![Build Status](https://travis-ci.org/EFTEC/RouteOne.svg?branch=master)](https://travis-ci.org/EFTEC/RouteOne)
