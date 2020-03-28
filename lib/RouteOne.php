@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.9 2020-02-15
+ * @version   1.10 2020-03-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -146,6 +146,59 @@ class RouteOne
     }
 
     /**
+     * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
+     * <b>Note: It doesn't work with localhost or ip domain. It is on purpose.</b>
+     * 
+     *
+     * @param bool $https If true the it also redirect to https
+     */
+    public function alwaysWWW($https = false) {
+        if (@$_SERVER['HTTP_HOST']==='localhost' || ip2long(@$_SERVER['HTTP_HOST'])) {
+            if ($https) {
+                $this->alwaysHTTPS();
+            }
+            return;
+        }
+        if (strpos(@$_SERVER['HTTP_HOST'], 'www.') === false) {
+            if ($https) {
+                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
+                $location = 'https:';
+                if ($port !== 443 && $port !== 80) {
+                    $location .= $port;
+                }
+            } else {
+                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 80;
+                $location = 'http:';
+                if ($port != 80) {
+                    $location .= $port;
+                }
+            }
+            $location .= '//www.' . @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'];
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: ' . $location);
+            die(1);
+        } else {
+            if ($https) {
+                $this->alwaysHTTPS();
+            }
+        }
+    }
+
+    /**
+     * If the page is loaded as http, then it redirects to https
+     */
+    public function alwaysHTTPS() {
+        if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === "off") {
+            $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
+            $port = ($port === 443 || $port === 80) ? '' : $port;
+            $location = 'https:' . $port . '//' . @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'];
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: ' . $location);
+            die(1);
+        }
+    }
+
+    /**
      * It creates and object (for example, a Controller object) and calls the method.<br>
      * <b>Example:</b> (type controller,api,ws)
      * <pre>
@@ -182,7 +235,7 @@ class RouteOne
     public function callObject(
         $classStructure = '%sController', $throwOnError = true
         , $method = '%sAction', $methodGet = '%sActionGet', $methodPost = '%sActionPost'
-        ,$arguments=['id','idparent','event']
+        , $arguments = ['id', 'idparent', 'event']
     ) {
         if ($this->type != 'front') {
             $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
@@ -237,7 +290,7 @@ class RouteOne
             } else {
                 $pb = $this->isPostBack ? "(POST)" : "(GET)";
                 $msgError = "Action [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
-                $msgError=strip_tags($msgError);
+                $msgError = strip_tags($msgError);
                 if ($throwOnError) {
                     throw new UnexpectedValueException($msgError);
                 } else {
@@ -337,7 +390,7 @@ class RouteOne
             } else {
                 $pb = $this->isPostBack ? "(POST)" : "(GET)";
                 $msgError = "Action ex [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
-                $msgError=strip_tags($msgError); 
+                $msgError = strip_tags($msgError);
                 if ($throwOnError) {
                     throw new UnexpectedValueException($msgError);
                 } else {

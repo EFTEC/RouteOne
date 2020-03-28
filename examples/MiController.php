@@ -11,5 +11,19 @@ class MiController
     public function action3Action($id="") {
         echo "calling MiController->action3Action( id: [$id])\n";
     }
-
+    public function actionHTTPSAction($id="") {
+        echo "calling MiController->actionHTTPSAction( id: [$id])\n";
+        global $route;
+        $route->alwaysHTTPS();
+    }
+    public function actionWWWAction($id="") {
+        echo "calling MiController->actionWWWAction( id: [$id])\n";
+        global $route;
+        $route->alwaysWWW();
+    }
+    public function actionWWWSAction($id="") {
+        echo "calling MiController->actionWWWSAction( id: [$id])\n";
+        global $route;
+        $route->alwaysWWW(true);
+    }
 }

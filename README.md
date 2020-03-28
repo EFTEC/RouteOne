@@ -418,6 +418,22 @@ It builds an url (front) based in custom values
 $route->url(null,"Daily","Milk",20); // Daily/Milk/20
 ```
 
+### alwaysWWW($https = false) 
+
+If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
+<b>Note: It doesn't work with localhost or ip domain. It is on purpose.</b>
+
+```php 
+$route->alwaysWWW(); 
+```
+
+### alwaysHTTPS() 
+
+If the page is loaded as http, then it redirects to https
+
+```php 
+$route->alwaysHTTPS(); 
+```
 
 ## fields
 
@@ -462,6 +478,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-03-27 1.10
+    * added method alwaysHTTPS() and alwaysWWW()
 * 2020-02-15 1.9
     * added new arguments to callObject()
     * new method callObjectEx()
