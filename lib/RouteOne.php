@@ -147,7 +147,7 @@ class RouteOne
 
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
-     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
      * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
      * it must be called at the top of the code</b>
      *
@@ -187,7 +187,7 @@ class RouteOne
 
     /**
      * If the page is loaded as http, then it redirects to https<br>
-     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
      * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
      * it must be called at the top of the code</b>
      */
