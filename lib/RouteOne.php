@@ -148,12 +148,13 @@ class RouteOne
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
-     * 
+     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
+     * it must be called at the top of the code</b>
      *
      * @param bool $https If true the it also redirect to https
      */
     public function alwaysWWW($https = false) {
-        if (strpos(@$_SERVER['HTTP_HOST'],'.')===false || ip2long(@$_SERVER['HTTP_HOST'])) {
+        if (strpos(@$_SERVER['HTTP_HOST'], '.') === false || ip2long(@$_SERVER['HTTP_HOST'])) {
             if ($https) {
                 $this->alwaysHTTPS();
             }
@@ -187,9 +188,11 @@ class RouteOne
     /**
      * If the page is loaded as http, then it redirects to https<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
+     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
+     * it must be called at the top of the code</b>
      */
     public function alwaysHTTPS() {
-        if (strpos(@$_SERVER['HTTP_HOST'],'.')===false || ip2long(@$_SERVER['HTTP_HOST'])) {
+        if (strpos(@$_SERVER['HTTP_HOST'], '.') === false || ip2long(@$_SERVER['HTTP_HOST'])) {
             return;
         }
         if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === "off") {
