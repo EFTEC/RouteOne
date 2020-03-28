@@ -424,7 +424,9 @@ If the subdomain is empty or different to www, then it redirect to www.domain.co
 <b>Note: It doesn't work with localhost or ip domain. It is on purpose.</b>
 
 ```php 
-$route->alwaysWWW(); 
+$route->alwaysWWW();  // if the domain is somedomain.dom/url, then it redirects to www.somedomain.dom/url
+$route->alwaysWWW(true);  // if the domain is http: somedomain.dom/url, then it redirects to https: www.somedomain.dom/url
+
 ```
 
 ### alwaysHTTPS() 
