@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.10 2020-03-27
+ * @version   1.10.1 2020-03-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -147,13 +147,13 @@ class RouteOne
 
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
-     * <b>Note: It doesn't work with localhost or ip domain. It is on purpose.</b>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
      * 
      *
      * @param bool $https If true the it also redirect to https
      */
     public function alwaysWWW($https = false) {
-        if (@$_SERVER['HTTP_HOST']==='localhost' || ip2long(@$_SERVER['HTTP_HOST'])) {
+        if (strpos(@$_SERVER['HTTP_HOST'],'.')===false || ip2long(@$_SERVER['HTTP_HOST'])) {
             if ($https) {
                 $this->alwaysHTTPS();
             }
@@ -185,9 +185,13 @@ class RouteOne
     }
 
     /**
-     * If the page is loaded as http, then it redirects to https
+     * If the page is loaded as http, then it redirects to https<br>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
      */
     public function alwaysHTTPS() {
+        if (strpos(@$_SERVER['HTTP_HOST'],'.')===false || ip2long(@$_SERVER['HTTP_HOST'])) {
+            return;
+        }
         if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === "off") {
             $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
             $port = ($port === 443 || $port === 80) ? '' : $port;

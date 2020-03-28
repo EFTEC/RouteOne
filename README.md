@@ -421,7 +421,7 @@ $route->url(null,"Daily","Milk",20); // Daily/Milk/20
 ### alwaysWWW($https = false) 
 
 If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
-<b>Note: It doesn't work with localhost or ip domain. It is on purpose.</b>
+<b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
 
 ```php 
 $route->alwaysWWW();  // if the domain is somedomain.dom/url, then it redirects to www.somedomain.dom/url
@@ -432,9 +432,13 @@ $route->alwaysWWW(true);  // if the domain is http: somedomain.dom/url, then it 
 ### alwaysHTTPS() 
 
 If the page is loaded as http, then it redirects to https
+<b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b>
 
 ```php 
-$route->alwaysHTTPS(); 
+$route->alwaysHTTPS(); // http://somedomain.com ---> https://somedomain.com
+$route->alwaysHTTPS(); // http://localhost ---> // http://localhost
+$route->alwaysHTTPS(); // http://127.0.0.1 ---> // http://127.0.0.1
+$route->alwaysHTTPS(); // http://mypc ---> // http://mypc
 ```
 
 ## fields
@@ -480,6 +484,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-03-27 1.10.1
+    * a small fix for alwaysHTTPS() 
 * 2020-03-27 1.10
     * added method alwaysHTTPS() and alwaysWWW()
 * 2020-02-15 1.9
