@@ -24,6 +24,7 @@ echo "<li><a href='{$url}/Mi/Action3/id/parentid?_event=click'>./Mi/Action3/id/p
 echo "<li><a href='{$url}/Mi/ActionHTTPS/id/parentid?_event=click'>./Mi/ActionHTTPS/id/parentid?_event=click redirect to https</a> (https must be enable in the server)<br></li>";
 echo "<li><a href='{$url}/Mi/ActionWWW/id/parentid?_event=click'>./Mi/ActionWWW/id/parentid?_event=click redirect to www.</a> (if www.**domain** is defined) <br></li>";
 echo "<li><a href='{$url}/Mi/ActionWWWS/id/parentid?_event=click'>./Mi/ActionWWWS/id/parentid?_event=click redirect to www (https).</a> (if www.**domain** is defined) <br></li>";
+echo "<li><a href='{$url}/Mi/ActionNaked/id/parentid?_event=click'>./Mi/ActionNaked/id/parentid?_event=click redirect to naked domain.</a> <br></li>";
 
 echo "</ul><hr>";
 echo "<b>It could show an error. It is expected (if the path is incorrect of the class/method does not exists)</b><br></li>";

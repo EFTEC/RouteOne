@@ -453,6 +453,19 @@ $route->alwaysHTTPS(); // http://127.0.0.1 ---> // http://127.0.0.1
 $route->alwaysHTTPS(); // http://mypc ---> // http://mypc
 ```
 
+### alwaysNakedDomain($https = false) 
+
+If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>   
+<b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>  
+<b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
+it must be called at the top of the code</b>   
+
+```php 
+$route->alwaysNakedDomain();  // if the domain is www.somedomain.dom/url, then it redirects to somedomain.dom/url
+$route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/url, then it redirects to https: somedomain.dom/url
+
+```
+
 ## fields
 
 
@@ -496,6 +509,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-03-27 1.11
+    * added alwaysNakedDomain()
 * 2020-03-27 1.10.1
     * a small fix for alwaysHTTPS() 
 * 2020-03-27 1.10

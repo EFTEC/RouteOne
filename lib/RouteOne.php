@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.10.1 2020-03-27
+ * @version   1.11 2020-03-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -148,7 +148,7 @@ class RouteOne
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
+     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
      * it must be called at the top of the code</b>
      *
      * @param bool $https If true the it also redirect to https
@@ -186,9 +186,49 @@ class RouteOne
     }
 
     /**
+     * If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
+     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
+     * it must be called at the top of the code</b>
+     *
+     * @param bool $https If true the it also redirect to https
+     */
+    public function alwaysNakedDomain($https = false) {
+        if (strpos(@$_SERVER['HTTP_HOST'], '.') === false || ip2long(@$_SERVER['HTTP_HOST'])) {
+            if ($https) {
+                $this->alwaysHTTPS();
+            }
+            return;
+        }
+        if (strpos(@$_SERVER['HTTP_HOST'], 'www.') === 0) {
+            $host=substr(@$_SERVER['HTTP_HOST'],4); // we remove the www. at first
+            if ($https) {
+                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
+                $location = 'https:';
+                if ($port !== 443 && $port !== 80) {
+                    $location .= $port;
+                }
+            } else {
+                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 80;
+                $location = 'http:';
+                if ($port != 80) {
+                    $location .= $port;
+                }
+            }
+            $location .= '//' . $host . @$_SERVER['REQUEST_URI'];
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: ' . $location);
+            die(1);
+        } else {
+            if ($https) {
+                $this->alwaysHTTPS();
+            }
+        }
+    }
+    /**
      * If the page is loaded as http, then it redirects to https<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually
+     * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
      * it must be called at the top of the code</b>
      */
     public function alwaysHTTPS() {

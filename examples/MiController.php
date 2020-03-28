@@ -26,4 +26,9 @@ class MiController
         global $route;
         $route->alwaysWWW(true);
     }
+    public function actionNakedAction($id="") {
+        echo "calling MiController->actionNakedAction( id: [$id])\n";
+        global $route;
+        $route->alwaysNakedDomain();
+    }
 }
