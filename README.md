@@ -343,19 +343,22 @@ The name of the method is obtained via the current **action**
 
 It creates and object (for example, a Controller object) and calls the method.<br>
 Note: It is an advanced version of this::callObject()<br>
-This method uses {} to replace values.<br>
-<ul>
-<li><b>{controller}</b> The name of the controller</li>
-<li><b>{action}</b> The current action</li>
-<li><b>{event}</b> The current event</li>
-<li><b>{type}</b> The current type of path (ws,controller,front,api)</li>
-<li><b>{module}</b> The current module (if module is active)</li>
-<li><b>{id}</b> The current id</li>
-<li><b>{idparent}</b> The current idparent</li>
-<li><b>{category}</b> The current category</li>
-<li><b>{subcategory}</b> The current subcategory</li>
-<li><b>{subsubcategory}</b> The current subsubcategory</li>
-</ul>
+This method uses {} to replace values based in the next variables:<br>
+
+| Tag              | Description                                        |
+|------------------|----------------------------------------------------|
+| {controller}     | The name of the controller                         |
+| {action}         | The current action                                 |
+| {event}          | The current event                                  |
+| {type}           | The current type of path (ws,controller,front,api) |
+| {module}         | The current module (if module is active)           |
+| {id}             | The current id                                     |
+| {idparent}       | The current idparent                               |
+| {category}       | The current category                               |
+| {subcategory}    | The current subcategory                            |
+| {subsubcategory} | The current subsubcategory                         |
+
+
 <b>Example:</b> 
 
 ```php
@@ -364,7 +367,12 @@ $this->callObjectEx('cocacola\controller\{controller}Controller');
 // it calls the method cocacola\controller\Customer::InsertAction(23,'','');
 
 // front example: http://somedomain/product/coffee/nescafe/1
-$this->callObjectEx('cocacola\controller\{category}Controller',false,'{subcategory}',null,null,['subsubcategory','id']);
+$this->callObjectEx('cocacola\controller\{category}Controller' // the class to call
+        ,false // if error then it throw an error
+        ,'{subcategory}' // the method to call (get or post)
+        ,null // the method to call (method get)
+        ,null // the method to call (method post)
+        ,['subsubcategory','id']); // the arguments to call the method
 // it calls the method cocacola\controller\product::coffee('nescafe','1');
 ```
 
