@@ -53,6 +53,7 @@ class routerOneTest extends TestCase
      */
     public function testCall() {
         $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';
         $this->ro->fetch();
         $r=$this->ro->callObject('eftec\tests\%sController');

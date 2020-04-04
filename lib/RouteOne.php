@@ -11,7 +11,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.11 2020-03-27
+ * @version   1.12 2020-04-04
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -61,6 +61,8 @@ class RouteOne
     public $subcategory;
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
+    /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
+    var $serverName=null;
     /**
      * @var boolean
      */
@@ -498,8 +500,8 @@ class RouteOne
 
     /**
      * Returns the current base url without traling space, paremters or queries/b<br>
-     * <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and
-     * it could be modified by the end-user
+     * <b>Note:</b> If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'] and
+     * it could be modified by the user.
      *
      * @param bool $withoutFilename if true then it doesn't include the filename
      *
@@ -513,12 +515,14 @@ class RouteOne
     }
 
     /**
-     * It returns the current server without trailing slash.
+     * It returns the current server without trailing slash.<br>
+     * <b>Note:</b> If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'] and
+     * it could be modified by the user.
      *
      * @return string
      */
     public function getCurrentServer() {
-        $server_name = @$_SERVER['SERVER_NAME'];
+        $server_name = ($this->serverName===null) ? @$_SERVER['SERVER_NAME'] : $this->serverName;
         $port = !in_array(@$_SERVER['SERVER_PORT'], [80, 443]) ? ":" . @$_SERVER['SERVER_PORT'] . "" : '';
         if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) == 'on' || @$_SERVER['HTTPS'] == '1')) {
             $scheme = 'https';
@@ -526,6 +530,18 @@ class RouteOne
             $scheme = 'http';
         }
         return $scheme . '://' . $server_name . $port;
+    }
+
+    /**
+     * It sets the current server name.  It is used by getCurrentUrl() and getCurrentServer()
+     *
+     * @param string $serverName Example: "localhost", "127.0.0.1", "www.site.com", etc.
+     *
+     * @see \eftec\routeone\RouteOne::getCurrentUrl
+     * @see \eftec\routeone\RouteOne::getCurrentServer()
+     */
+    public function setCurrentServer($serverName) {
+        $this->serverName=$serverName;
     }
 
     /**
@@ -621,6 +637,11 @@ class RouteOne
      */
     public function fetch() {
         $this->urlFetched = @$_GET['req']; // controller/action/id/..
+        if($this->urlFetched!='') {
+            if(substr($this->urlFetched,0,1)==='/') { // nginx returns a path as /aaa/bbb apache aaa/bbb
+                $this->urlFetched=substr($this->urlFetched,1);
+            }
+        }
         $this->queries = $_GET;
         unset($this->queries['req']);
         unset($this->queries['_event']);

@@ -95,22 +95,111 @@ Then, the first ramification is the name of the module (**Internal**) and it cal
 
 ## Getting started
 
-1) Create a .htaccess file
+### 1) Create a .htaccess file in the folder root (Apache)
 
 ```
 <IfModule mod_rewrite.c>
+Options +FollowSymLinks
 RewriteEngine On
-RewriteCond %{REQUEST_URI} !-f
-RewriteCond %{REQUEST_URI} !-d
-RewriteCond %{REQUEST_URI} !-L
-# l = last
-RewriteRule ^(example|test|css|vendors|vendor|js|img|upload)($|/) - [L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]
 
 </IfModule>
 ```
 
-where test1.php is the file that it will work as router.  ?req=$1 is important because the system will read the route from "req"
+> If your web host doesn't allow the FollowSymlinks option, try replacing it with Options +SymLinksIfOwnerMatch.   
+
+
+> The important line is:    
+> RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]   # The router to call.
+
+### Or configure nginx.conf (Nginx) Linux
+
+```
+server {
+    listen 80;
+    server_name localhost;
+    root /example.com/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.html index.htm index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /router.php?req=$document_uri&$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php7.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+
+```
+
+> The important line is:  
+> try_files $uri $uri/ /router.php?req=$document_uri&$query_string;
+
+### Or configure nginx.conf (Nginx) Windows
+
+```
+server {
+    listen 80;
+    server_name localhost;
+    root c:/www;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.html index.htm index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /router.php?req=$document_uri&$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+
+```
+> The important line is:  
+> try_files $uri $uri/ /router.php?req=$document_uri&$query_string;
+
+
+where **router.php** is the file that it will work as router.  ?req=$1 is important because the system will read the route from "req"
 
 ```php 
 // router.php
@@ -404,6 +493,18 @@ It returns the current server without trailing slash.
 $route->getCurrentServer(); // http://somedomain
 ```
 
+### setCurrentServer($serverName)
+
+It sets the current server name.  It is used by getCurrentUrl() and getCurrentServer().    
+**Note:** If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'] and it could be modified
+ by the user.
+
+```php 
+$route->setCurrentServer('localhost'); 
+$route->setCurrentServer('127.0.0.1'); 
+$route->setCurrentServer('domain.dom'); 
+```
+
 ### getUrl($extraQuery = '',$includeQuery=false)
 
 It gets the (full) url based in the information in the class.
@@ -513,6 +614,10 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-04-04 1.12 
+    * added support for nginx.
+    * updated the documentation for .htaccess
+    * new method setCurrentServer()
 * 2020-03-27 1.11
     * added alwaysNakedDomain()
 * 2020-03-27 1.10.1
