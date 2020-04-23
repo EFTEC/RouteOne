@@ -1,6 +1,7 @@
 {
   "name": "eftec/routeone",
   "description": "Router service class for PHP",
+  "version": "1.13",
   "type": "library",
   "keywords": [
     "php",
@@ -16,11 +17,6 @@
       "email": "jcastro@eftec.cl"
     }
   ],
-  "extra": {
-    "branch-alias": {
-      "dev-master": "1.12-dev"
-    }
-  },
   "config": {
     "platform": {
       "php": "7"

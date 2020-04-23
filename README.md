@@ -614,6 +614,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-04-23 1.13
+    * Lots of cleanups. 
 * 2020-04-04 1.12 
     * added support for nginx.
     * updated the documentation for .htaccess

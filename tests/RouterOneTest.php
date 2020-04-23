@@ -6,7 +6,7 @@ use eftec\routeone\RouteOne;
 use PHPUnit\Framework\TestCase;
 class categoryController {
     public function actiontestAction($id,$idparent='',$event='') {
-        echo "action test called";
+        echo 'action test called';
     }
 }
 
@@ -36,11 +36,11 @@ class routerOneTest extends TestCase
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
-        $this->assertEquals("Action2", $this->ro->getAction());
+        $this->assertEquals('Action2', $this->ro->getAction());
         $this->assertEquals(null, $this->ro->getCategory());
-        $this->assertEquals("id", $this->ro->getId());
-        $this->assertEquals("parentid", $this->ro->getIdparent());
-        $this->assertEquals("MyController", $this->ro->getController());
+        $this->assertEquals('id', $this->ro->getId());
+        $this->assertEquals('parentid', $this->ro->getIdparent());
+        $this->assertEquals('MyController', $this->ro->getController());
         $this->ro->callFile(dirname(__FILE__).'/%s.php');
         
         $this->assertEquals('http://www.example.dom/dummy.php',$this->ro->getNonRouteUrl('dummy.php'));
@@ -52,6 +52,7 @@ class routerOneTest extends TestCase
      * @throws \Exception
      */
     public function testCall() {
+        
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';
@@ -68,8 +69,9 @@ class routerOneTest extends TestCase
             ,['id']);
         $this->assertEquals('Action ex [actiontestActionX or ] (GET) not found for class [eftec\tests\categoryController]'
             ,$r,'error');
-        $this->ro->setAction("");
-        $this->ro->setController("");
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setAction(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setController(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->reset());
 
     }
     public function testNewVar2()
@@ -81,22 +83,22 @@ class routerOneTest extends TestCase
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
-        $this->assertEquals("Action2", $this->ro->getAction());
+        $this->assertEquals('Action2', $this->ro->getAction());
         $this->assertEquals(null, $this->ro->getCategory());
-        $this->assertEquals("id", $this->ro->getId());
-        $this->assertEquals("parentid", $this->ro->getIdparent());
-        $this->assertEquals("MyController", $this->ro->getController());
-        $this->assertEquals("Module", $this->ro->getModule());
-        $this->assertEquals("Event", $this->ro->getEvent());
-        $this->assertEquals("Extra", $this->ro->getExtra());
+        $this->assertEquals('id', $this->ro->getId());
+        $this->assertEquals('parentid', $this->ro->getIdparent());
+        $this->assertEquals('MyController', $this->ro->getController());
+        $this->assertEquals('Module', $this->ro->getModule());
+        $this->assertEquals('Event', $this->ro->getEvent());
+        $this->assertEquals('Extra', $this->ro->getExtra());
         $this->assertEquals(false, $this->ro->isPostBack());
-        $this->ro->setController("");
-        $this->ro->setAction("");
-        $this->ro->setId("");
-        $this->ro->setEvent("");
-        $this->ro->setIdParent("");
-        $this->ro->setExtra("");
-        $this->ro->setIsPostBack(false);
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setController(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setAction(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setId(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setEvent(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setIdParent(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setExtra(''));
+        $this->assertInstanceOf(RouteOne::class,$this->ro->setIsPostBack(false));
         
         $this->assertEquals('http://www.example.dom/Module////',$this->ro->getUrl('',false));
  
@@ -112,20 +114,20 @@ class routerOneTest extends TestCase
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
-        $this->assertEquals("category", $this->ro->getCategory());
+        $this->assertEquals('category', $this->ro->getCategory());
         $this->assertEquals('subc', $this->ro->getSubcategory());
-        $this->assertEquals("subsubc", $this->ro->getSubsubcategory());
-        $this->assertEquals("id", $this->ro->getId());
-        $this->ro->setController("");
-        $this->ro->setAction("");
-        $this->ro->setId("");
-        $this->ro->setEvent("");
-        $this->ro->setIdParent("");
+        $this->assertEquals('subsubc', $this->ro->getSubsubcategory());
+        $this->assertEquals('id', $this->ro->getId());
+        $this->ro->setController('');
+        $this->ro->setAction('');
+        $this->ro->setId('');
+        $this->ro->setEvent('');
+        $this->ro->setIdParent('');
 
-        $this->assertEquals("front",$this->ro->getType());
-        $this->assertEquals("def",$this->ro->getQuery('id','def'));
+        $this->assertEquals('front', $this->ro->getType());
+        $this->assertEquals('def', $this->ro->getQuery('id', 'def'));
         $this->ro->setQuery('id','123');
-        $this->assertEquals("123",$this->ro->getQuery('id','def'));
+        $this->assertEquals('123', $this->ro->getQuery('id', 'def'));
 
         //$this->ro->callObject();
     }
@@ -140,20 +142,20 @@ class routerOneTest extends TestCase
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
-        $this->assertEquals("category", $this->ro->getCategory());
+        $this->assertEquals('category', $this->ro->getCategory());
         $this->assertEquals('subc', $this->ro->getSubcategory());
-        $this->assertEquals("subsubc", $this->ro->getSubsubcategory());
-        $this->assertEquals("id", $this->ro->getId());
-        $this->ro->setController("");
-        $this->ro->setAction("");
-        $this->ro->setId("");
-        $this->ro->setEvent("");
-        $this->ro->setIdParent("");
+        $this->assertEquals('subsubc', $this->ro->getSubsubcategory());
+        $this->assertEquals('id', $this->ro->getId());
+        $this->ro->setController('');
+        $this->ro->setAction('');
+        $this->ro->setId('');
+        $this->ro->setEvent('');
+        $this->ro->setIdParent('');
 
-        $this->assertEquals("front",$this->ro->getType());
-        $this->assertEquals("def",$this->ro->getQuery('id','def'));
+        $this->assertEquals('front', $this->ro->getType());
+        $this->assertEquals('def', $this->ro->getQuery('id', 'def'));
         $this->ro->setQuery('id','123');
-        $this->assertEquals("123",$this->ro->getQuery('id','def'));
+        $this->assertEquals('123', $this->ro->getQuery('id', 'def'));
     }
 
     public function testNewVar5()

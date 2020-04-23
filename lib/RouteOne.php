@@ -1,8 +1,11 @@
-<?php
+<?php /** @noinspection PrintfScanfArgumentsInspection */
+
+/** @noinspection ReturnTypeCanBeDeclaredInspection */
 
 namespace eftec\routeone;
 
 use Exception;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -11,7 +14,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.12 2020-04-04
+ * @version   1.13 2020-04-23
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -62,7 +65,7 @@ class RouteOne
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
-    var $serverName=null;
+    public $serverName;
     /**
      * @var boolean
      */
@@ -81,12 +84,10 @@ class RouteOne
     /**
      * @var string|null=['api','ws','controller','front'][$i]
      */
-    private $forceType = null;
+    private $forceType;
     private $defController;
     private $defAction;
     private $isModule;
-    /** @var string the url fetched */
-    private $urlFetched = '';
 
     /**
      * RouteOne constructor.
@@ -127,7 +128,7 @@ class RouteOne
      *
      * @return $this
      */
-    public function setDefaultValues($defController = "Home", $defAction = "index") {
+    public function setDefaultValues($defController = 'Home', $defAction = 'index') {
         $this->defController = $defController;
         $this->defAction = $defAction;
         return $this;
@@ -163,27 +164,15 @@ class RouteOne
             return;
         }
         if (strpos(@$_SERVER['HTTP_HOST'], 'www.') === false) {
-            if ($https) {
-                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
-                $location = 'https:';
-                if ($port !== 443 && $port !== 80) {
-                    $location .= $port;
-                }
-            } else {
-                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 80;
-                $location = 'http:';
-                if ($port != 80) {
-                    $location .= $port;
-                }
-            }
+            $location=$this->getLocation($https);
             $location .= '//www.' . @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'];
             header('HTTP/1.1 301 Moved Permanently');
             header('Location: ' . $location);
             die(1);
-        } else {
-            if ($https) {
-                $this->alwaysHTTPS();
-            }
+        }
+
+        if ($https) {
+            $this->alwaysHTTPS();
         }
     }
 
@@ -204,28 +193,32 @@ class RouteOne
         }
         if (strpos(@$_SERVER['HTTP_HOST'], 'www.') === 0) {
             $host=substr(@$_SERVER['HTTP_HOST'],4); // we remove the www. at first
-            if ($https) {
-                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
-                $location = 'https:';
-                if ($port !== 443 && $port !== 80) {
-                    $location .= $port;
-                }
-            } else {
-                $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 80;
-                $location = 'http:';
-                if ($port != 80) {
-                    $location .= $port;
-                }
-            }
+            $location=$this->getLocation($https);
             $location .= '//' . $host . @$_SERVER['REQUEST_URI'];
             header('HTTP/1.1 301 Moved Permanently');
             header('Location: ' . $location);
             die(1);
+        }
+
+        if ($https) {
+            $this->alwaysHTTPS();
+        }
+    }
+    private function getLocation($https) {
+        if ($https) {
+            $port = $_SERVER['HTTP_PORT'] ?? '443';
+            $location = 'https:';
+            if ($port !== '443' && $port !== '80') {
+                $location .= $port;
+            }
         } else {
-            if ($https) {
-                $this->alwaysHTTPS();
+            $port = $_SERVER['HTTP_PORT'] ?? '80';
+            $location = 'http:';
+            if ($port !== '80') {
+                $location .= $port;
             }
         }
+        return $location;
     }
     /**
      * If the page is loaded as http, then it redirects to https<br>
@@ -237,9 +230,11 @@ class RouteOne
         if (strpos(@$_SERVER['HTTP_HOST'], '.') === false || ip2long(@$_SERVER['HTTP_HOST'])) {
             return;
         }
-        if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === "off") {
-            $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : 443;
-            $port = ($port === 443 || $port === 80) ? '' : $port;
+       
+        if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === 'off') {
+            $port = $_SERVER['HTTP_PORT'] ?? '443';
+            
+            $port = ($port === '443' || $port === '80') ? '' : $port;
             $location = 'https:' . $port . '//' . @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'];
             header('HTTP/1.1 301 Moved Permanently');
             header('Location: ' . $location);
@@ -286,20 +281,20 @@ class RouteOne
         , $method = '%sAction', $methodGet = '%sActionGet', $methodPost = '%sActionPost'
         , $arguments = ['id', 'idparent', 'event']
     ) {
-        if ($this->type != 'front') {
+        if ($this->type !== 'front') {
             $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
         } else {
             $op = sprintf($classStructure, $this->category, $this->subcategory, $this->subsubcategory);
         }
         if (!class_exists($op, true)) {
             if ($throwOnError) {
-                throw new Exception("Class $op doesn't exist");
+                throw new RuntimeException("Class $op doesn't exist");
             }
             return "Class $op doesn't exist";
         }
         try {
             $controller = new $op();
-            if ($this->type != 'front') {
+            if ($this->type !== 'front') {
                 $actionRequest = sprintf($method, $this->action);
             } else {
                 $actionRequest = sprintf($method, $this->subcategory, $this->subsubcategory);
@@ -326,26 +321,24 @@ class RouteOne
                 }
                 return $ex->getMessage();
             }
-        } else {
-            if (method_exists($controller, $actionGetPost)) {
-                try {
-                    $controller->{$actionGetPost}(...$args);
-                } catch (Exception $ex) {
-                    if ($throwOnError) {
-                        throw $ex;
-                    }
-                    return $ex->getMessage();
-                }
-            } else {
-                $pb = $this->isPostBack ? "(POST)" : "(GET)";
-                $msgError = "Action [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
-                $msgError = strip_tags($msgError);
+        } elseif (method_exists($controller, $actionGetPost)) {
+            try {
+                $controller->{$actionGetPost}(...$args);
+            } catch (Exception $ex) {
                 if ($throwOnError) {
-                    throw new UnexpectedValueException($msgError);
-                } else {
-                    return $msgError;
+                    throw $ex;
                 }
+                return $ex->getMessage();
             }
+        } else {
+            $pb = $this->isPostBack ? '(POST)' : '(GET)';
+            $msgError = "Action [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+            $msgError = strip_tags($msgError);
+            if ($throwOnError) {
+                throw new UnexpectedValueException($msgError);
+            }
+
+            return $msgError;
         }
         return null;
     }
@@ -398,7 +391,7 @@ class RouteOne
         $op = $this->replaceNamed($classStructure);
         if (!class_exists($op, true)) {
             if ($throwOnError) {
-                throw new Exception("Class $op doesn't exist");
+                throw new RuntimeException("Class $op doesn't exist");
             }
             return "Class $op doesn't exist";
         }
@@ -426,26 +419,24 @@ class RouteOne
                 }
                 return $ex->getMessage();
             }
-        } else {
-            if (method_exists($controller, $actionGetPost)) {
-                try {
-                    $controller->{$actionGetPost}(...$args);
-                } catch (Exception $ex) {
-                    if ($throwOnError) {
-                        throw $ex;
-                    }
-                    return $ex->getMessage();
-                }
-            } else {
-                $pb = $this->isPostBack ? "(POST)" : "(GET)";
-                $msgError = "Action ex [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
-                $msgError = strip_tags($msgError);
+        } elseif (method_exists($controller, $actionGetPost)) {
+            try {
+                $controller->{$actionGetPost}(...$args);
+            } catch (Exception $ex) {
                 if ($throwOnError) {
-                    throw new UnexpectedValueException($msgError);
-                } else {
-                    return $msgError;
+                    throw $ex;
                 }
+                return $ex->getMessage();
             }
+        } else {
+            $pb = $this->isPostBack ? '(POST)' : '(GET)';
+            $msgError = "Action ex [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+            $msgError = strip_tags($msgError);
+            if ($throwOnError) {
+                throw new UnexpectedValueException($msgError);
+            }
+
+            return $msgError;
         }
         return null;
     }
@@ -522,9 +513,12 @@ class RouteOne
      * @return string
      */
     public function getCurrentServer() {
-        $server_name = ($this->serverName===null) ? @$_SERVER['SERVER_NAME'] : $this->serverName;
-        $port = !in_array(@$_SERVER['SERVER_PORT'], [80, 443]) ? ":" . @$_SERVER['SERVER_PORT'] . "" : '';
-        if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) == 'on' || @$_SERVER['HTTPS'] == '1')) {
+        $server_name = $this->serverName ?? @$_SERVER['SERVER_NAME'];
+        $port = !in_array(@$_SERVER['SERVER_PORT'], ['80', '443'], true) 
+            ? ':' . @$_SERVER['SERVER_PORT'] . '' 
+            : '';
+        if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) === 'on' 
+                || @$_SERVER['HTTPS'] === '1')) {
             $scheme = 'https';
         } else {
             $scheme = 'http';
@@ -636,17 +630,14 @@ class RouteOne
      * .htaccess = RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]<br>
      */
     public function fetch() {
-        $this->urlFetched = @$_GET['req']; // controller/action/id/..
-        if($this->urlFetched!='') {
-            if(substr($this->urlFetched,0,1)==='/') { // nginx returns a path as /aaa/bbb apache aaa/bbb
-                $this->urlFetched=substr($this->urlFetched,1);
-            }
+        $urlFetched = @$_GET['req']; // controller/action/id/..
+        // nginx returns a path as /aaa/bbb apache aaa/bbb
+        if(($urlFetched !== '') && strpos($urlFetched, '/') === 0) { 
+            $urlFetched =substr($urlFetched, 1);
         }
         $this->queries = $_GET;
-        unset($this->queries['req']);
-        unset($this->queries['_event']);
-        unset($this->queries['_extra']);
-        $path = explode("/", filter_var($this->urlFetched, FILTER_SANITIZE_URL));
+        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
+        $path = explode('/', filter_var($urlFetched, FILTER_SANITIZE_URL));
         $first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
@@ -698,7 +689,7 @@ class RouteOne
             }
         }
         $this->action = @$path[$id++];
-        $this->action = ($this->action) ? $this->action : $this->defAction;
+        $this->action = ($this->action) ?: $this->defAction;
         $this->id = @$path[$id++];
         /** @noinspection PhpUnusedLocalVariableInspection */
         $this->idparent = @$path[$id++];
@@ -707,7 +698,7 @@ class RouteOne
     }
 
     private function request($id, $numeric = false, $default = null) {
-        $v = isset($_POST[$id]) ? $_POST[$id] : (isset($_GET[$id]) ? $_GET[$id] : $default);
+        $v = $_POST[$id] ?? $_GET[$id] ?? $default;
         if ($numeric && is_numeric($v)) {
             return $v;
         }
@@ -823,7 +814,7 @@ class RouteOne
      * @return mixed
      */
     public function getQuery($key, $valueIfNotFound = null) {
-        return (isset($this->queries[$key])) ? $this->queries[$key] : $valueIfNotFound;
+        return $this->queries[$key] ?? $valueIfNotFound;
     }
 
     /**
