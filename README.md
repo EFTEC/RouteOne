@@ -614,6 +614,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-06-07 1.14.2
+    * Bug fixed: Delete an echo (used for debug)
 * 2020-06-07 1.14.1
     * Solved a small bug. it keeps the compatibility.   
 * 2020-06-07 1.14

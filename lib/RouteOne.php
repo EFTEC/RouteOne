@@ -14,7 +14,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.14.1 2020-06-27
+ * @version   1.14.2 2020-06-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -663,7 +663,6 @@ class RouteOne
                 if(strpos($urlFetched,$path)===0) {
                     $urlFetched=ltrim($this->str_replace_ex($path,'',$urlFetched,1),'/');
                     $this->type=$ty;
-                    echo "type $ty!";
                     break;
                 }
             }
