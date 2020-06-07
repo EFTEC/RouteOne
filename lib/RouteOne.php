@@ -14,7 +14,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.13 2020-04-23
+ * @version   1.14 2020-06-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -64,6 +64,8 @@ class RouteOne
     public $subcategory;
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
+    /** @var null|array used to identify the type of route. */
+    protected $identify=null;
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
     /**
@@ -74,19 +76,14 @@ class RouteOne
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
     /**
-     * @var string Default api initial Path
-     */
-    private $apiPath;
-    /**
-     * @var string default web service initial Path
-     */
-    private $wsPath;
-    /**
      * @var string|null=['api','ws','controller','front'][$i]
      */
     private $forceType;
     private $defController;
     private $defAction;
+    private $defCategory;
+    private $defSubCategory;
+    private $defSubSubCategory;
     private $isModule;
 
     /**
@@ -116,7 +113,6 @@ class RouteOne
             $this->isPostBack = false;
         }
         $this->setDefaultValues();
-        $this->setPath();
     }
 
     /**
@@ -128,25 +124,17 @@ class RouteOne
      *
      * @return $this
      */
-    public function setDefaultValues($defController = 'Home', $defAction = 'index') {
+    public function setDefaultValues($defController = 'Home', $defAction = 'index',$defCategory='Home'
+        ,$defSubCategory='',$defSubSubCategory='') {
         $this->defController = $defController;
         $this->defAction = $defAction;
+        $this->defCategory=$defCategory;
+        $this->defSubCategory=$defSubCategory;
+        $this->defSubSubCategory=$defSubSubCategory;
         return $this;
     }
 
-    /**
-     * It sets the default root path for api and ws
-     *
-     * @param string $apiPath By default the api path is "api"
-     * @param string $wsPath  By default the ws path is "ws"
-     *
-     * @return $this
-     */
-    public function setPath($apiPath = 'api', $wsPath = 'ws') {
-        $this->apiPath = $apiPath;
-        $this->wsPath = $wsPath;
-        return $this;
-    }
+
 
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
@@ -230,10 +218,10 @@ class RouteOne
         if (strpos(@$_SERVER['HTTP_HOST'], '.') === false || ip2long(@$_SERVER['HTTP_HOST'])) {
             return;
         }
-       
+
         if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === 'off') {
             $port = $_SERVER['HTTP_PORT'] ?? '443';
-            
+
             $port = ($port === '443' || $port === '80') ? '' : $port;
             $location = 'https:' . $port . '//' . @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'];
             header('HTTP/1.1 301 Moved Permanently');
@@ -514,10 +502,10 @@ class RouteOne
      */
     public function getCurrentServer() {
         $server_name = $this->serverName ?? @$_SERVER['SERVER_NAME'];
-        $port = !in_array(@$_SERVER['SERVER_PORT'], ['80', '443'], true) 
-            ? ':' . @$_SERVER['SERVER_PORT'] . '' 
+        $port = !in_array(@$_SERVER['SERVER_PORT'], ['80', '443'], true)
+            ? ':' . @$_SERVER['SERVER_PORT'] . ''
             : '';
-        if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) === 'on' 
+        if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) === 'on'
                 || @$_SERVER['HTTPS'] === '1')) {
             $scheme = 'https';
         } else {
@@ -606,6 +594,9 @@ class RouteOne
     public function reset() {
         // $this->base=''; base is always keep
         $this->defController = '';
+        $this->defCategory='';
+        $this->defSubCategory='';
+        $this->defSubSubCategory='';
         $this->forceType = null;
         $this->defAction = '';
         $this->isModule = '';
@@ -615,6 +606,31 @@ class RouteOne
         $this->extra = null;
         return $this;
     }
+
+
+    /**
+     * This function its used to identify the type automatically. If the url is empty then it is marked as default<br>
+     * It returns the first one that matches.
+     * <b>Example:</b><br>
+     * <pre>
+     * $this->setIdentifyType([
+     *      'controller' =>'backend', // domain.dom/backend/controller/action => controller type
+     *      'api'=>'api',             // domain.dom/api/controller => api type
+     *      'ws'=>'api/ws'            // domain.dom/api/ws/controller => ws type
+     *      'front'=>''               // domain.dom/* =>front (any other that does not match)
+     * ]);
+     * </pre>
+     *
+     * @param $array
+     */
+    public function setIdentifyType($array) {
+        $this->identify=$array;
+    }
+
+    protected function str_replace_ex($search, $replace, $subject,$limit=99999) {
+        return implode($replace, explode($search, $subject, $limit+1));
+    }
+
     // .htaccess:
     // RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]
     /**
@@ -632,12 +648,26 @@ class RouteOne
     public function fetch() {
         $urlFetched = @$_GET['req']; // controller/action/id/..
         // nginx returns a path as /aaa/bbb apache aaa/bbb
-        if(($urlFetched !== '') && strpos($urlFetched, '/') === 0) { 
-            $urlFetched =substr($urlFetched, 1);
+        if($urlFetched !== '') {
+            $urlFetched =ltrim($urlFetched,'/');
         }
         $this->queries = $_GET;
         unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
-        $path = explode('/', filter_var($urlFetched, FILTER_SANITIZE_URL));
+        $urlFetched=filter_var($urlFetched, FILTER_SANITIZE_URL);
+        if(is_array($this->identify)) {
+            foreach($this->identify as $ty=>$path) {
+                if ($path==='') {
+                    $this->forceType=$ty;
+                    break;
+                }
+                if(strpos($urlFetched,$path)===0) {
+                    $urlFetched=ltrim($this->str_replace_ex($path,'',$urlFetched,1),'/');
+                    $this->forceType=$ty;
+                    break;
+                }
+            }
+        }
+        $path = explode('/', $urlFetched);
         $first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
@@ -646,25 +676,9 @@ class RouteOne
             $this->module = null;
         }
         if ($this->forceType === null) {
-            switch ($first) {
-                case $this->apiPath: // [module]/api/controller/action
-                    $id++; // ignores the first one cause it's 'api'
-                    $this->type = 'api';
-                    $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
-                    $id++;
-                    break;
-                case $this->wsPath: // [module]/ws/controller/action
-                    $id++; // ignores the first one cause it's 'ws'
-                    $this->type = 'ws';
-                    $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
-                    $id++;
-                    break;
-                default: // [module]/controller/action
-                    $this->type = 'controller';
-                    $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
-                    $id++;
-                    break;
-            }
+            $this->type = 'controller';
+            $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
+            $id++;
         } else {
             $this->type = $this->forceType;
             switch ($this->forceType) {
@@ -678,10 +692,12 @@ class RouteOne
                     break;
                 case 'front':
                     // it is processed differently.
-                    $this->category = @$path[$id++] ?? '';
-                    $this->subcategory = @$path[$id++] ?? '';
+                    $this->category = @$path[$id] ? $path[$id] : $this->defCategory;
+                    $id++;
+                    $this->subcategory = @$path[$id] ? $path[$id] : $this->defSubCategory;
+                    $id++;
                     /** @noinspection PhpUnusedLocalVariableInspection */
-                    $this->subsubcategory = @$path[$id++] ?? '';
+                    $this->subsubcategory = @$path[$id++] ?? $this->defSubSubCategory;
                     $this->id = end($path); // id is the last element of the path
                     $this->event = $this->request('_event');
                     $this->extra = $this->request('_extra');
@@ -739,11 +755,10 @@ class RouteOne
         }
         switch ($this->type) {
             case 'api':
-                $url .= $this->apiPath . '/';
                 $url .= '';
                 break;
             case 'ws':
-                $url .= $this->wsPath . '/';
+                $url .= '';
                 break;
             case 'controller':
                 $url .= '';
@@ -984,7 +999,7 @@ class RouteOne
     }
 
     /**
-     * @param bool $isPostBack
+     * @param bool $isPostBackg
      *
      * @return RouteOne
      */

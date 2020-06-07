@@ -216,7 +216,7 @@ $route->callObject('somenamespace\\controller\\%sController'); // where it will 
 
 where 
 * **https://localhost** is the base (it could be changed on the constructor)
-* **api** indicates we are calling an "api". This value could be changed via **$this->setPath()**
+* **api** indicates we are calling an "api". This value could be changed via **$this->setIdentifyType()**
 * **Controller**. It's the controller class to call. 
 * **Action**. It's the action (method) to call
 * **id**. Some unique identifier.
@@ -243,7 +243,7 @@ WS is an alternative to API. We could use API/WS or both.  The difference is how
 
 where 
 * **https://localhost** is the base (it could be changed on the constructor)
-* **ws** indicates we are calling an "ws". This value could be changed via **$this->setPath()**
+* **ws** indicates we are calling an "ws". This value could be changed via **$this->setIdentifyType()**
 * **Controller**. It's the controller class to call. 
 * **Action**. It's the action (method) to call
 * **id**. Some unique identifier.
@@ -614,6 +614,9 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-06-07 1.14
+    * added defcategory,defsubcategory and defsubsubcategory
+    * new method setIdentifyType()
 * 2020-04-23 1.13
     * Lots of cleanups. 
 * 2020-04-04 1.12 
