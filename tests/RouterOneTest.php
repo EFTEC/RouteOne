@@ -114,6 +114,7 @@ class routerOneTest extends TestCase
         $url=$this->ro->getCurrentUrl();
         $this->assertNotEmpty($url);
         $this->ro->fetch();
+        $this->assertEquals('front', $this->ro->type);
         $this->assertEquals('category', $this->ro->getCategory());
         $this->assertEquals('subc', $this->ro->getSubcategory());
         $this->assertEquals('subsubc', $this->ro->getSubsubcategory());
@@ -131,6 +132,38 @@ class routerOneTest extends TestCase
 
         //$this->ro->callObject();
     }
+
+
+    public function testNewVar3b()
+    {
+
+        $_GET['req']='front/category/subc/subsubc/id';
+        $_GET['_event']='Event';
+        $_GET['_extra']='Extra';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setIdentifyType(['front'=>'front','controller'=>'']);
+        $url=$this->ro->getCurrentUrl();
+        $this->assertNotEmpty($url);
+        $this->ro->fetch();
+        $this->assertEquals('front', $this->ro->type);
+        $this->assertEquals('category', $this->ro->getCategory());
+        $this->assertEquals('subc', $this->ro->getSubcategory());
+        $this->assertEquals('subsubc', $this->ro->getSubsubcategory());
+        $this->assertEquals('id', $this->ro->getId());
+        $this->ro->setController('');
+        $this->ro->setAction('');
+        $this->ro->setId('');
+        $this->ro->setEvent('');
+        $this->ro->setIdParent('');
+
+        $this->assertEquals('front', $this->ro->getType());
+        $this->assertEquals('def', $this->ro->getQuery('id', 'def'));
+        $this->ro->setQuery('id','123');
+        $this->assertEquals('123', $this->ro->getQuery('id', 'def'));
+
+        //$this->ro->callObject();
+    }
+
 
     public function testNewVar4()
     {

@@ -14,7 +14,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019 jorge castro castillo
  * @license   lgpl v3
- * @version   1.14 2020-06-27
+ * @version   1.14.1 2020-06-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -65,7 +65,7 @@ class RouteOne
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
     /** @var null|array used to identify the type of route. */
-    protected $identify=null;
+    protected $identify=['api'=>'api','ws'=>'ws','controller'=>''];
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
     /**
@@ -657,12 +657,13 @@ class RouteOne
         if(is_array($this->identify)) {
             foreach($this->identify as $ty=>$path) {
                 if ($path==='') {
-                    $this->forceType=$ty;
+                    $this->type=$ty;
                     break;
                 }
                 if(strpos($urlFetched,$path)===0) {
                     $urlFetched=ltrim($this->str_replace_ex($path,'',$urlFetched,1),'/');
-                    $this->forceType=$ty;
+                    $this->type=$ty;
+                    echo "type $ty!";
                     break;
                 }
             }
@@ -675,35 +676,37 @@ class RouteOne
         } else {
             $this->module = null;
         }
-        if ($this->forceType === null) {
+        if ($this->forceType!==null) {
+            $this->type=$this->forceType;
+        }
+        if (!$this->type) {
             $this->type = 'controller';
             $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
             $id++;
-        } else {
-            $this->type = $this->forceType;
-            switch ($this->forceType) {
-                case 'ws':
-                case 'api':
-                    $id++;
-                    $this->controller = @$path[$id++] ?? $this->defController;
-                    break;
-                case 'controller':
-                    $this->controller = @$path[$id++] ?? $this->defController;
-                    break;
-                case 'front':
-                    // it is processed differently.
-                    $this->category = @$path[$id] ? $path[$id] : $this->defCategory;
-                    $id++;
-                    $this->subcategory = @$path[$id] ? $path[$id] : $this->defSubCategory;
-                    $id++;
-                    /** @noinspection PhpUnusedLocalVariableInspection */
-                    $this->subsubcategory = @$path[$id++] ?? $this->defSubSubCategory;
-                    $this->id = end($path); // id is the last element of the path
-                    $this->event = $this->request('_event');
-                    $this->extra = $this->request('_extra');
-                    return;
-            }
+        }          
+        switch ($this->type) {
+            case 'ws':
+            case 'api':
+                $id++;
+                $this->controller = @$path[$id++] ?? $this->defController;
+                break;
+            case 'controller':
+                $this->controller = @$path[$id++] ?? $this->defController;
+                break;
+            case 'front':
+                // it is processed differently.
+                $this->category = @$path[$id] ? $path[$id] : $this->defCategory;
+                $id++;
+                $this->subcategory = @$path[$id] ? $path[$id] : $this->defSubCategory;
+                $id++;
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $this->subsubcategory = @$path[$id++] ?? $this->defSubSubCategory;
+                $this->id = end($path); // id is the last element of the path
+                $this->event = $this->request('_event');
+                $this->extra = $this->request('_extra');
+                return;
         }
+  
         $this->action = @$path[$id++];
         $this->action = ($this->action) ?: $this->defAction;
         $this->id = @$path[$id++];
