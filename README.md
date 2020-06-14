@@ -614,6 +614,10 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2020-06-14 1.15
+    * Added default values in setDefaultValues().     
+    * Method fetch() now it unset the value.    
+    * Fixed Method url().  
 * 2020-06-07 1.14.2
     * Bug fixed: Delete an echo (used for debug)
 * 2020-06-07 1.14.1

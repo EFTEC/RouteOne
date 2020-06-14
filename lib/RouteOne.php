@@ -12,9 +12,9 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package   RouteOne
- * @copyright 2019 jorge castro castillo
+ * @copyright 2019-2020 jorge castro castillo
  * @license   lgpl v3
- * @version   1.14.2 2020-06-27
+ * @version   1.15 2020-06-14
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -121,6 +121,10 @@ class RouteOne
      *
      * @param string $defController Default Controller
      * @param string $defAction     Default action
+     *
+     * @param string $defCategory
+     * @param string $defSubCategory
+     * @param string $defSubSubCategory
      *
      * @return $this
      */
@@ -527,7 +531,8 @@ class RouteOne
     }
 
     /**
-     * It builds an url using custom values.
+     * It builds an url using custom values.<br>
+     * If the values are null, then it keeps the current values.
      *
      * @param null $module     Name of the module
      * @param null $controller Name of the controller.
@@ -544,19 +549,19 @@ class RouteOne
         $id = null,
         $idparent = null
     ) {
-        if ($module) {
+        if ($module!==null) {
             $this->module = $module;
         }
-        if ($controller) {
+        if ($controller!==null) {
             $this->controller = $controller;
         }
-        if ($action) {
+        if ($action!==null) {
             $this->action = $action;
         }
-        if ($id) {
+        if ($id!==null) {
             $this->id = $id;
         }
-        if ($idparent) {
+        if ($idparent!==null) {
             $this->id = $idparent;
         }
         $this->extra = null;
@@ -647,6 +652,7 @@ class RouteOne
      */
     public function fetch() {
         $urlFetched = @$_GET['req']; // controller/action/id/..
+        unset($_GET['req']);
         // nginx returns a path as /aaa/bbb apache aaa/bbb
         if($urlFetched !== '') {
             $urlFetched =ltrim($urlFetched,'/');
@@ -668,7 +674,7 @@ class RouteOne
             }
         }
         $path = explode('/', $urlFetched);
-        $first = $path[0] ?? $this->defController;
+        //$first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
             $this->module = @$path[$id++];
@@ -682,7 +688,7 @@ class RouteOne
             $this->type = 'controller';
             $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
             $id++;
-        }          
+        }
         switch ($this->type) {
             case 'ws':
             case 'api':
@@ -705,7 +711,7 @@ class RouteOne
                 $this->extra = $this->request('_extra');
                 return;
         }
-  
+
         $this->action = @$path[$id++];
         $this->action = ($this->action) ?: $this->defAction;
         $this->id = @$path[$id++];
@@ -751,18 +757,15 @@ class RouteOne
      * @return string
      */
     public function getUrl($extraQuery = '', $includeQuery = false) {
+        
         $url = $this->base . '/';
         if ($this->isModule) {
             $url .= $this->module . '/';
         }
         switch ($this->type) {
-            case 'api':
-                $url .= '';
-                break;
             case 'ws':
-                $url .= '';
-                break;
             case 'controller':
+            case 'api':
                 $url .= '';
                 break;
             case 'front':
@@ -1001,7 +1004,7 @@ class RouteOne
     }
 
     /**
-     * @param bool $isPostBackg
+     * @param bool $isPostBack
      *
      * @return RouteOne
      */
