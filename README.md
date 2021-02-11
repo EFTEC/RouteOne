@@ -1,24 +1,42 @@
 # RouteOne
-Route for PHP
+It reads the URL route and parses the values of path, so it could be interpreted manually or automatically in the fastest way possible (for example, to implement a MVC system).  
 
-It reads the url route and parses the values, so it could be interpreted manually or automatically.
-
-Unlikely other libraries, this library does not have dependencies and it is contained in a single class.  
-
-This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it has fixed 
-functionalities.  This library does not allow to change the "route" but it covers practically all cases, so it 
-increases the performance and usability while it sacrifices flexibility.
-
-This library is also as fast as possible and slim as possible.
-
-
-[![Build Status](https://travis-ci.org/EFTEC/RouteOne.svg?branch=master)](https://travis-ci.org/EFTEC/RouteOne)
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
-[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php-7.x-green.svg)]()
-[![CocoaPods](https://img.shields.io/badge/docs-70%25-yellow.svg)]()
+[![php](https://img.shields.io/badge/php-%3E5.6-green.svg)]()
+[![coverage](https://img.shields.io/badge/coverage-80%25-green)]()
+[![compatible](https://img.shields.io/badge/compatible-linux%7Cwindows%7Cmacos-green)]()
+
+Unlikely other libraries, this library does not have dependencies and it is contained in a single class, so it is compatible with any PHP project, for example Wordpress, Laravel, Drupal, a custom PHP project, etc.
+
+This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it has fixed  functionalities.  This library does not allow to use custom "routes" but it covers practically all cases, so it increases the performance and usability while it sacrifices flexibility.
+
+## Example:
+
+Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into:
+
+```php
+$route=new RouteOne('http://somedomain.dom',null,false,true); // base url, type of route (null default), has module (false), fetch values (true)
+echo "our route is:"
+echo $route->controller; // Customer
+echo $route->action // Update
+echo $route->id // 2
+    
+// It could also calls a method of a class automatically
+$this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from the class cocacola\controller\CustomerController
+
+// it is our class
+class CustomerController {
+    public function indexAction($id= '',$idparent= '',$event= '') {
+        // calling the method
+    }
+}
+    
+```
+
+
 
 ## What it does?
 
@@ -27,6 +45,7 @@ Let's say we do the next operation:
 An user calls the next website http://somedomain.com/Customer/Insert, he wants want to show a form to insert a customer
 
 ```php
+use \eftec\routeone\RouteOne;
 $route=new RouteOne('.',null,null); // Create the RouteOneClass
 $route->fetch(); // fetch all the input values (from the route, get, post and such).
 $route->callObject('somenamespace\\controller\\%sController'); // where it will call the  class CustomerController* 
@@ -83,6 +102,7 @@ Now, let's say we click on some button or we do some action.  It could be captur
 Now, let's say our system is modular and we have several customers (interna customers, external, etc.)
 
 ```php
+
 $route=new RouteOne('.',null,true); // true indicates it is modular 
 $route->fetch(); 
 $route->callObject('somenamespace\\%2s%\\controller\\%1sController');
@@ -233,7 +253,7 @@ if ($route->getType()=='api') {
    var_dump($route->getIdparent()); // null
    $route->callFile("api/%s.php",true); // we call the file Customer.php   
 } 
-``` 
+```
 
 ### WS route
 
@@ -260,7 +280,7 @@ if ($route->getType()=='ws') {
    var_dump($route->getIdparent()); // null
    $route->callFile("ws/%s.php",true); // we call the file Customer.php   
 } 
-``` 
+```
 
 ### Controller route
 
@@ -287,7 +307,7 @@ if ($route->getType()=='controller') {
    var_dump($route->getIdparent()); // null
    $route->callObject('\\somenamespace\\controller\\%sController'); // we call CustomerController class and we call the method "getAction" / "getActionGet" or "getActionPost"
 } 
-``` 
+```
 
 file CustomerController.php:
 ```php 
@@ -308,11 +328,11 @@ class CustomerController {
     }        
 }
 
-``` 
+```
 
 ### FRONT route
 
-The front route (for the front-end) is different than other routes. Syntactically it is distributed on category, subcategory and subsubcategory. 
+The front route (for the front-end) is different than other routes. Syntactically it is distributed on category, subcategory and sub-subcategory. 
 
 > This route is not identified automatically so it must be set in the constructor
 
@@ -366,7 +386,7 @@ if ($route->getType()=='front') {
    var_dump($route->getSubSubCategory()); // null
    var_dump($route->getId()); // 123  
 } 
-``` 
+```
 
 
 
@@ -396,7 +416,7 @@ Example:
 // http://localhost/..../?id=hi
 $id=$router->getQuery("id"); // hi
 $nf=$router->getQuery("something","not found"); // not found
-``` 
+```
 
 ### setQuery($key,$value)
 
@@ -407,7 +427,7 @@ Example:
 ```php 
 $route->setQuery("id","hi");
 $id=$router->getQuery("id"); // hi
-``` 
+```
 
 
 ### fetch()
@@ -434,7 +454,7 @@ The name of the method is obtained via the current **action**
 
 ### callObjectEx($classStructure, $throwOnError, $method, $methodGet, $methodPost,$arguments
 
-It creates and object (for example, a Controller object) and calls the method.<br>
+It creates an new instance of an object (for example, a Controller object) and calls the method.<br>
 Note: It is an advanced version of this::callObject()<br>
 This method uses {} to replace values based in the next variables:<br>
 
@@ -614,6 +634,12 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-02-11 1.16
+    * Lowered the requirement. Now, this library works in PHP 5.6 and higher (instead of PHP 7.0 and higher)
+    * Constructor has a new argument, it could fetch() the values
+    * alwaysHTTPS() has a new argument that it could returns the full URL (if it requires redirect) or null
+    * alwaysWWW() has a new argument that it could returns the full URL (if it requires redirect) or null
+    * alwaysNakedDomain() has a new argument that it could returns the full URL (if it requires redirect) or null
 * 2020-06-14 1.15
     * Added default values in setDefaultValues().     
     * Method fetch() now it unset the value.    
