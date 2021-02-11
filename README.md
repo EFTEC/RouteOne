@@ -634,7 +634,10 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-02.11 1.16.1
+    * fixed a problem with "api" and "ws" that it doesn't read the controller in the right position.  
 * 2021-02-11 1.16
+    * Removed Travis.
     * Lowered the requirement. Now, this library works in PHP 5.6 and higher (instead of PHP 7.0 and higher)
     * Constructor has a new argument, it could fetch() the values
     * alwaysHTTPS() has a new argument that it could returns the full URL (if it requires redirect) or null

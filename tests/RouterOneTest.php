@@ -44,11 +44,39 @@ class RouterOneTest extends TestCase
     public function testMisc1() {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_SERVER['REQUEST_METHOD']='POST';
-        $_GET['req']='aaa/bbb/ccc'; // bbb is for api (but we are forcing it the definition of it.
+        $_GET['req']='module1/controller1/action1'; // bbb is for api (but we are forcing it the definition of it.
         $this->ro=new RouteOne('http://www.example.dom','api',true,true);
         self::assertEquals(true,$this->ro->isPostBack());
-        self::assertEquals('aaa',$this->ro->module);
-        self::assertEquals('ccc',$this->ro->controller);
+        self::assertEquals('module1',$this->ro->module);
+        self::assertEquals('controller1',$this->ro->controller);
+        self::assertEquals('action1',$this->ro->action);
+        unset($_SERVER['REQUEST_METHOD']);
+    }
+    public function testAPIWS() {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_SERVER['REQUEST_METHOD']='POST';
+        $_GET['_event']='event1';
+        $_GET['_extra']='world';
+        $_GET['req']='api/controller1/action1/id1/parent1/?_event=event1&_extra=world';
+        $this->ro=new RouteOne('http://www.example.dom',null,false,true);
+        self::assertEquals(true,$this->ro->isPostBack());
+        self::assertEquals('api',$this->ro->type);
+        self::assertEquals('controller1',$this->ro->controller);
+        self::assertEquals('action1',$this->ro->action);
+        self::assertEquals('id1',$this->ro->id);
+        self::assertEquals('parent1',$this->ro->idparent);
+        self::assertEquals('event1',$this->ro->event);
+        self::assertEquals('world',$this->ro->extra);
+
+
+        $_GET['req']='ws/controller1/action1/id1/parent1'; // bbb is for api (but we are forcing it the definition of it.
+        $this->ro=new RouteOne('http://www.example.dom',null,false,true);
+        self::assertEquals('ws',$this->ro->type);
+        self::assertEquals(true,$this->ro->isPostBack());
+        self::assertEquals('controller1',$this->ro->controller);
+        self::assertEquals('action1',$this->ro->action);
+        self::assertEquals('id1',$this->ro->id);
+        self::assertEquals('parent1',$this->ro->idparent);
         unset($_SERVER['REQUEST_METHOD']);
     }
     public function testwww() {
@@ -129,6 +157,19 @@ class RouterOneTest extends TestCase
         self::assertInstanceOf(RouteOne::class,$this->ro->reset());
 
     }
+
+    public function testCallFail() {
+
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+        $r=$this->ro->callObject('eftec\tests\%sControllerX',false);
+        self::assertEquals('Class eftec\tests\categoryControllerX doesn\'t exist',$r);
+
+
+    }
+
     public function testNewVar2()
     {
         $_GET['req']='Module/MyController/Action2/id/parentid';

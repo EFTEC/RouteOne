@@ -16,7 +16,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.16 2021-02-11
+ * @version   1.16.1 2021-02-11
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -742,7 +742,7 @@ class RouteOne
         switch ($this->type) {
             case 'ws':
             case 'api':
-                $id++;
+                //$id++; [fixed]
                 $this->controller = isset($path[$id]) ? $path[$id] : $this->defController;
                 $id++;
                 break;
