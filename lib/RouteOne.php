@@ -16,7 +16,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.16.1 2021-02-11
+ * @version   1.17 2021-02-16
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -87,6 +87,7 @@ class RouteOne
     private $defSubCategory;
     private $defSubSubCategory;
     private $isModule;
+    private $isFetched=false;
 
     public $httpHost = '';
     public $requestUri = '';
@@ -127,11 +128,11 @@ class RouteOne
 
     /**
      * It sets the default controller and action (if they are not entered in the route)<br>
-     * It is uses to set a default route.
+     * It is uses to set a default route if the value is empty or its missing.<br>
+     * <b>Note:It must be set before fetch().</b>
      *
      * @param string $defController Default Controller
      * @param string $defAction     Default action
-     *
      * @param string $defCategory
      * @param string $defSubCategory
      * @param string $defSubSubCategory
@@ -141,6 +142,9 @@ class RouteOne
     public function setDefaultValues($defController = 'Home', $defAction = 'index', $defCategory = 'Home'
         , $defSubCategory = '', $defSubSubCategory = '')
     {
+        if($this->isFetched) {
+            throw new RuntimeException('RouteOne: you cant setDefaultValues() after fetch()');
+        }
         $this->defController = $defController;
         $this->defAction = $defAction;
         $this->defCategory = $defCategory;
@@ -245,10 +249,9 @@ class RouteOne
         if (strpos($this->httpHost, '.') === false || ip2long($this->httpHost)) {
             return null;
         }
-
-        if (empty(@$_SERVER['HTTPS']) || @$_SERVER['HTTPS'] === 'off') {
+        $https=isset($_SERVER['HTTPS'])?$_SERVER['HTTPS']:'';
+        if (empty($https) || $https === 'off') {
             $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : '443';
-
             $port = ($port === '443' || $port === '80') ? '' : $port;
             $location = 'https:' . $port . '//' . $this->httpHost . $this->requestUri;
             if ($redirect) {
@@ -483,7 +486,7 @@ class RouteOne
     {
         return preg_replace_callback($pattern, function ($matches) {
             $nameField = $matches[1];
-            return @$this->{$nameField} ?: $matches[0];
+            return isset($this->{$nameField}) ?$this->{$nameField}: $matches[0];
         }, $format);
     }
 
@@ -529,10 +532,11 @@ class RouteOne
      */
     public function getCurrentUrl($withoutFilename = true)
     {
+        $sn=isset($_SERVER['SCRIPT_NAME'])?$_SERVER['SCRIPT_NAME']:'';
         if ($withoutFilename) {
-            return dirname($this->getCurrentServer() . @$_SERVER['SCRIPT_NAME']);
+            return dirname($this->getCurrentServer() . $sn);
         }
-        return $this->getCurrentServer() . @$_SERVER['SCRIPT_NAME'];
+        return $this->getCurrentServer() . $sn;
     }
 
     /**
@@ -544,16 +548,15 @@ class RouteOne
      */
     public function getCurrentServer()
     {
-        $server_name = isset($this->serverName) ? $this->serverName : @$_SERVER['SERVER_NAME'];
-        $port = !in_array(@$_SERVER['SERVER_PORT'], ['80', '443'], true)
-            ? ':' . @$_SERVER['SERVER_PORT'] . ''
-            : '';
-        if (!empty(@$_SERVER['HTTPS']) && (strtolower(@$_SERVER['HTTPS']) === 'on'
-                || @$_SERVER['HTTPS'] === '1')) {
-            $scheme = 'https';
+        if (isset($this->serverName)) {
+            $server_name = $this->serverName;
         } else {
-            $scheme = 'http';
+            $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : null;
         }
+        $sp=isset($_SERVER['SERVER_PORT'])?$_SERVER['SERVER_PORT']:'';
+        $port = !in_array($sp, ['80', '443'], true) ? ':' . $sp . '' : '';
+        $https=isset($_SERVER['HTTPS'])?$_SERVER['HTTPS']:'';
+        $scheme = !empty($https) && (strtolower($https) === 'on' || $https === '1') ? 'https' : 'http';
         return $scheme . '://' . $server_name . $port;
     }
 
@@ -641,6 +644,7 @@ class RouteOne
     public function reset()
     {
         // $this->base=''; base is always keep
+        $this->isFetched=false;
         $this->defController = '';
         $this->defCategory = '';
         $this->defSubCategory = '';
@@ -697,6 +701,7 @@ class RouteOne
      */
     public function fetch()
     {
+        $this->isFetched=true;
         $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
         unset($_GET['req']);
         /** @noinspection HostnameSubstitutionInspection */
@@ -726,7 +731,7 @@ class RouteOne
         //$first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
-            $this->module = isset($path[$id]) ? $path[$id] : null;
+            $this->module = isset($path[$id])&& $path[$id] ? $path[$id] : null;
             $id++;
         } else {
             $this->module = null;
@@ -743,20 +748,20 @@ class RouteOne
             case 'ws':
             case 'api':
                 //$id++; [fixed]
-                $this->controller = isset($path[$id]) ? $path[$id] : $this->defController;
+                $this->controller = isset($path[$id])&& $path[$id] ? $path[$id] : $this->defController;
                 $id++;
                 break;
             case 'controller':
-                $this->controller = isset($path[$id]) ? $path[$id] : $this->defController;
+                $this->controller = isset($path[$id])&& $path[$id] ? $path[$id] : $this->defController;
                 $id++;
                 break;
             case 'front':
                 // it is processed differently.
-                $this->category = $path[$id] ?: $this->defCategory;
+                $this->category = isset($path[$id]) && $path[$id] ? $path[$id]: $this->defCategory;
                 $id++;
-                $this->subcategory = $path[$id] ?: $this->defSubCategory;
+                $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id]: $this->defSubCategory;
                 $id++;
-                $this->subsubcategory = isset($path[$id]) ? $path[$id] : $this->defSubSubCategory;
+                $this->subsubcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubSubCategory;
                 /** @noinspection PhpUnusedLocalVariableInspection */
                 $id++;
                 $this->id = end($path); // id is the last element of the path
@@ -767,7 +772,7 @@ class RouteOne
 
         $this->action = isset($path[$id]) ? $path[$id] : null;
         $id++;
-        $this->action = ($this->action) ?: $this->defAction;
+        $this->action = $this->action ?: $this->defAction; // $this->action is never undefined, so we don't need isset
         $this->id = isset($path[$id]) ? $path[$id] : null;
         $id++;
         $this->idparent = isset($path[$id]) ? $path[$id] : null;

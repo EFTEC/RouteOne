@@ -228,6 +228,45 @@ class RouterOneTest extends TestCase
 
         //$this->ro->callObject();
     }
+    public function testDefault() {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setDefaultValues('controller','action');
+        $this->ro->fetch();
+        self::assertEquals('controller',$this->ro->controller);
+        self::assertEquals('action',$this->ro->action);
+
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='controller2';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setDefaultValues('controller','action');
+        $this->ro->fetch();
+        self::assertEquals('controller2',$this->ro->controller);
+        self::assertEquals('action',$this->ro->action);
+
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='';
+        $this->ro=new RouteOne('http://www.example.dom','front');
+        $this->ro->setDefaultValues('controller','index','cat','subc','subcc');
+        $this->ro->fetch();
+        self::assertEquals('cat',$this->ro->category);
+        self::assertEquals('subc',$this->ro->subcategory);
+        self::assertEquals('subcc',$this->ro->subsubcategory);
+        $this->ro->reset();
+
+        // default values to front (category is set)
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='cat2';
+        $this->ro=new RouteOne('http://www.example.dom','front');
+        $this->ro->setDefaultValues('controller','index','cat','subc','subcc');
+        $this->ro->fetch();
+
+        self::assertEquals('cat2',$this->ro->category);
+        self::assertEquals('subc',$this->ro->subcategory);
+        self::assertEquals('subcc',$this->ro->subsubcategory);
+        $this->ro->reset();
+    }
 
 
     public function testNewVar3b()

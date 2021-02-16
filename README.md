@@ -634,6 +634,9 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-02-16 1.17
+   * removed all @ and replaced by isset(). Since this library is compatible with PHP 5.6, then it doesn't use ??
+   * setDefaultValues() trigger an error if it is called after fetch()
 * 2021-02.11 1.16.1
     * fixed a problem with "api" and "ws" that it doesn't read the controller in the right position.  
 * 2021-02-11 1.16
