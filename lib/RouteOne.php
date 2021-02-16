@@ -22,7 +22,7 @@ use UnexpectedValueException;
 class RouteOne
 {
     /**
-     * @var string It is the base url. RARELY CHANGED<br>
+     * @var string It is the base url.<br>
      */
     public $base = '';
     /**
@@ -31,33 +31,31 @@ class RouteOne
      */
     public $type = '';
     /**
-     * @var string It's the module. RARELY CHANGED unless the application<br>
-     * is jumping from one module to another
+     * @var string It's the current module.<br>
      */
     public $module = '';
     /**
-     * @var string It's the controller. CAN CHANGE with the controller
+     * @var string It's the controller.
      */
     public $controller;
     /**
-     * @var string It's the action. CAN CHANGE with the module
+     * @var string It's the action.
      */
     public $action;
     /**
-     * @var string It's the identifier. CAN CHANGE
+     * @var string It's the identifier.
      */
     public $id;
     /**
      * @var string. It's the event (such as "click on button).
-     * CAN CHANGE with the idparent
      */
     public $event;
     /**
-     * @var string. It's the event (such as "click on button). CAN CHANGE with the Id
+     * @var string. It is the current parent id (if any)
      */
     public $idparent;
     /**
-     * @var string. It's the event (such as "click on button). VARIABLE
+     * @var string. It's the event (such as "click on button).
      */
     public $extra;
     /** @var string The current category. It is useful for the type 'front' */
@@ -66,12 +64,12 @@ class RouteOne
     public $subcategory;
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
-    /** @var null|array used to identify the type of route. */
+    /** @var null|array It is an associative array that helps to identify the api and ws route. */
     protected $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
     /**
-     * @var boolean
+     * @var boolean its true if the page is POST.
      */
     public $isPostBack = false;
 
@@ -731,7 +729,7 @@ class RouteOne
         //$first = $path[0] ?? $this->defController;
         $id = 0;
         if ($this->isModule) {
-            $this->module = isset($path[$id])&& $path[$id] ? $path[$id] : null;
+            $this->module = isset($path[$id]) ? $path[$id] : null;
             $id++;
         } else {
             $this->module = null;
@@ -741,7 +739,7 @@ class RouteOne
         }
         if (!$this->type) {
             $this->type = 'controller';
-            $this->controller = @(!$path[$id]) ? $this->defController : $path[$id];
+            $this->controller = (!$path[$id]) ? $this->defController : $path[$id];
             $id++;
         }
         switch ($this->type) {

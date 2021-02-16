@@ -13,16 +13,29 @@ Unlikely other libraries, this library does not have dependencies and it is cont
 
 This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it has fixed  functionalities.  This library does not allow to use custom "routes" but it covers practically all cases, so it increases the performance and usability while it sacrifices flexibility.
 
+## Table of contents
+
+- [RouteOne](#routeone)
+  - [Example:](#example)
+  - [What it does?](#what-it-does)
+  - [Getting started](#getting-started)
+  - [Routes](#routes)
+  - [Methods](#methods)
+  - [fields](#fields)
+  - [Changelog](#changelog)
+
+
 ## Example:
 
 Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into:
 
 ```php
+use eftec\routeone\RouteOne;
 $route=new RouteOne('http://somedomain.dom',null,false,true); // base url, type of route (null default), has module (false), fetch values (true)
-echo "our route is:"
+echo "our route is:";
 echo $route->controller; // Customer
-echo $route->action // Update
-echo $route->id // 2
+echo $route->action; // Update
+echo $route->id; // 2
     
 // It could also calls a method of a class automatically
 $this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from the class cocacola\controller\CustomerController
@@ -54,6 +67,7 @@ $route->callObject('somenamespace\\controller\\%sController'); // where it will 
 or
 
 ```php
+use eftec\routeone\RouteOne;
 $route=new RouteOne('.',null,null); // Create the RouteOneClass
 $route->fetch(); // fetch all the input values (from the route, get, post and such).
 $route->callObjectEx('somenamespace\\controller\\{controller}Controller'); // where it will call the  class CustomerController* 
@@ -99,7 +113,7 @@ Now, let's say we click on some button or we do some action.  It could be captur
 
 ### **Module**
 
-Now, let's say our system is modular and we have several customers (interna customers, external, etc.)
+Now, let's say our system is modular, and we have several customers (interna customers, external, etc.)
 
 ```php
 
@@ -593,10 +607,22 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 
 ## fields
 
-
-### $isPostBack (field)
-
-if true then the form is called as POST (i.e. a submit button).
+| Field           | Description                                                  | Example                                                      |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| $base           | It is the base url.                                          | $this->base=0;                                               |
+| $type           | It is the type of url (api,ws,controller or front)           | echo $this->type; // api                                     |
+| $module         | It's the current module                                      | echo $this->module;                                          |
+| $controller     | It's the controller.                                         | echo $this->controller;                                      |
+| $action         | It's the action.                                             | echo $this->action;                                          |
+| $id             | It's the identifier                                          | echo $this->id;                                              |
+| $event          | It's the event (such as "click on button).                   | echo$this->event;                                            |
+| $idparent       | It is the current parent id (if any)                         | echo $this->idparent;                                        |
+| $extra          | It's the event (such as "click on button)                    | echo $this->extra;                                           |
+| $category       | The current category. It is useful for the type 'front'      | echo $this->category;                                        |
+| $subcategory    | The current sub-category. It is useful for the type 'front'  | echo $this->subcategory;                                     |
+| $subsubcategory | The current sub-sub-category. It is useful for the type  'front' | echo $this->subsubcategory;                                  |
+| $identify       | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
+| $isPostBack     | its true if the page is POST.                                | if ()$this->isPostBack) { ... };                             |
 
 ### $type 
 
@@ -635,8 +661,9 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 ## Changelog
 
 * 2021-02-16 1.17
-   * removed all @ and replaced by isset(). Since this library is compatible with PHP 5.6, then it doesn't use ??
-   * setDefaultValues() trigger an error if it is called after fetch()
+   * removed all @ and replaced by **isset()**. Since this library is compatible with PHP 5.6, then it doesn't use "??" 
+     operators.
+   * **setDefaultValues()** trigger an error if it is called after fetch()
 * 2021-02.11 1.16.1
     * fixed a problem with "api" and "ws" that it doesn't read the controller in the right position.  
 * 2021-02-11 1.16
