@@ -622,11 +622,21 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 | $subcategory    | The current sub-category. It is useful for the type 'front'  | echo $this->subcategory;                                     |
 | $subsubcategory | The current sub-sub-category. It is useful for the type  'front' | echo $this->subsubcategory;                                  |
 | $identify       | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
-| $isPostBack     | its true if the page is POST.                                | if ()$this->isPostBack) { ... };                             |
+| $isPostBack     | its true if the page is POST, otherwise false.                                | if ($this->isPostBack) { ... };                             |
+| $verb           | The current verb, it could be GET,POST,PUT and DELETE.       | if ($this->verb) { ... };                             |
+
+## Whitelist
+
+| Field               | Description                                                  | Example                                                      |
+| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| $allowedVerbs       | A list with allowed verbs                                    | $this->allowedVerbs=['GET', 'POST', 'PUT', 'DELETE'];        |
+| $allowedFields      | A list with allowed fields used by callObjectEx(             | $this->$allowedFields=['controller', 'action', 'verb', 'event', 'type', 'module', 'id'<br />, 'idparent','category', 'subcategory', 'subsubcategory']; |
+| $allowedControllers | A list with allowed controllers without namespaces (if null then it allows any controller) | $this->$allowedControllers=['Purchase','Invoice','Customer'];<br />$this->$allowedControllers=null // allows any controller; |
+
 
 ### $type 
 
-it returns the current type
+it returns the current type of url.
 
 > Also obtained via getType()
 
