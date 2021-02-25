@@ -660,6 +660,15 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-02-26 1.18
+   * new fields $verb (it gets the current verb, example GET, POST, etc.)
+   * new whitelist elements:
+     * $allowedVerbs The list of allowed verbs.
+     * $allowedFields The list of allowed fields used by **callObjectEx()**
+     * $allowedControllers The list of allowed controllers. If this list is set and the controller is not in the whitelist
+       , then the controller is set as null
+   * The method **callObjectEx()** allows to use the verb. The verb is always ucfirst.
+     * Example $this->callObjectEx('cocacola\controller\{controller}Controller','{action}Action{verb}');
 * 2021-02-16 1.17
    * removed all @ and replaced by **isset()**. Since this library is compatible with PHP 5.6, then it doesn't use "??" 
      operators.

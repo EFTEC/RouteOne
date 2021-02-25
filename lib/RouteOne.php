@@ -16,47 +16,28 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.17 2021-02-16
+ * @version   1.18 2021-02-25
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    /**
-     * @var string It is the base url.<br>
-     */
+    /** @var string It is the base url.<br> */
     public $base = '';
-    /**
-     * @var string=['api','ws','controller','front'][$i] It is the type url.<br>
-     * RARELY CHANGED unless it's calls a different behaviour
-     */
+    /** @var string=['api','ws','controller','front'][$i] It is the type url. */
     public $type = '';
-    /**
-     * @var string It's the current module.<br>
-     */
+    /** @var string It's the current module (if we are using a module). */
     public $module = '';
-    /**
-     * @var string It's the controller.
-     */
+    /** @var string It's the controller. */
     public $controller;
-    /**
-     * @var string It's the action.
-     */
+    /** @var string It's the current action. */
     public $action;
-    /**
-     * @var string It's the identifier.
-     */
+    /** @var string It's the identifier. */
     public $id;
-    /**
-     * @var string. It's the event (such as "click on button).
-     */
+    /** @var string. It's the event (such as "click" on a button). */
     public $event;
-    /**
-     * @var string. It is the current parent id (if any)
-     */
+    /** @var string. It is the current parent id (if any) */
     public $idparent;
-    /**
-     * @var string. It's the event (such as "click on button).
-     */
+    /** @var string. It's the event (such as "click on button). */
     public $extra;
     /** @var string The current category. It is useful for the type 'front' */
     public $category;
@@ -68,10 +49,21 @@ class RouteOne
     protected $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
-    /**
-     * @var boolean its true if the page is POST.
-     */
+    /** @var boolean its true if the page is POST, otherwise (GET,DELETE or PUT) it is false. */
     public $isPostBack = false;
+    /** @var string The current HTML METHOD. It is always uppercase and only inside of the array $allowedVerbs */
+    public $verb = 'GET';
+    /** @var string[] The list of allowed $verb. In case of error, the $verb is equals to GET */
+    public $allowedVerbs = ['GET', 'POST', 'PUT', 'DELETE'];
+    /** @var string[] Allowed fields to be read and parsed by callObjectEx() */
+    public $allowedFields = ['controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
+        , 'subcategory', 'subsubcategory'];
+    /**
+     * @var null|array It is an associative array with name of controllers allowed or null to allows any controller. It
+     *                 is case sensitive.<br>
+     *                 <b>Example:</b> $this->$allowedControllers=['Purchase','Invoice','Customer'];
+     */
+    public $allowedControllers;
 
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
@@ -85,7 +77,7 @@ class RouteOne
     private $defSubCategory;
     private $defSubSubCategory;
     private $isModule;
-    private $isFetched=false;
+    private $isFetched = false;
 
     public $httpHost = '';
     public $requestUri = '';
@@ -93,19 +85,19 @@ class RouteOne
     /**
      * RouteOne constructor.
      *
-     * @param string $base       base url with or without trailing slash (it's removed if its set).<br>
-     *                           Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
-     * @param string $forcedType =['api','ws','controller','front'][$i]<br>
-     *                           <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
-     *                           <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
-     *                           <b>controller</b> then it expects a path as controller/action/id/idparent<br>
-     *                           <b>front</b> then it expects a path as /category/subc/subsubc/id<br>
-     * @param bool   $isModule   if true then the route start reading a module name<br>
-     *                           <b>false</b> controller/action/id/idparent<br>
-     *                           <b>true</b> module/controller/action/id/idparent<br>
+     * @param string $base        base url with or without trailing slash (it's removed if its set).<br>
+     *                            Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
+     * @param string $forcedType  =['api','ws','controller','front'][$i]<br>
+     *                            <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
+     *                            <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
+     *                            <b>controller</b> then it expects a path as controller/action/id/idparent<br>
+     *                            <b>front</b> then it expects a path as /category/subc/subsubc/id<br>
+     * @param bool   $isModule    if true then the route start reading a module name<br>
+     *                            <b>false</b> controller/action/id/idparent<br>
+     *                            <b>true</b> module/controller/action/id/idparent<br>
      * @param bool   $fetchValues (default false), if true then it also calls the method fetch()
      */
-    public function __construct($base = '', $forcedType = null, $isModule = false, $fetchValues=false)
+    public function __construct($base = '', $forcedType = null, $isModule = false, $fetchValues = false)
     {
         $this->base = rtrim($base, '/');
         $this->forceType = $forcedType;
@@ -113,13 +105,18 @@ class RouteOne
             $this->type = $forcedType;
         }
         $this->isModule = $isModule;
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->isPostBack = true;
+        $this->isPostBack = false;
+
+        if (isset($_SERVER['REQUEST_METHOD']) && in_array($_SERVER['REQUEST_METHOD'],$this->allowedVerbs, true)) {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $this->isPostBack = true;
+            }
+            $this->verb = $_SERVER['REQUEST_METHOD'];
         } else {
-            $this->isPostBack = false;
+            $this->verb = 'GET';
         }
         $this->setDefaultValues();
-        if($fetchValues) {
+        if ($fetchValues) {
             $this->fetch();
         }
     }
@@ -140,7 +137,7 @@ class RouteOne
     public function setDefaultValues($defController = 'Home', $defAction = 'index', $defCategory = 'Home'
         , $defSubCategory = '', $defSubSubCategory = '')
     {
-        if($this->isFetched) {
+        if ($this->isFetched) {
             throw new RuntimeException('RouteOne: you cant setDefaultValues() after fetch()');
         }
         $this->defController = $defController;
@@ -247,7 +244,7 @@ class RouteOne
         if (strpos($this->httpHost, '.') === false || ip2long($this->httpHost)) {
             return null;
         }
-        $https=isset($_SERVER['HTTPS'])?$_SERVER['HTTPS']:'';
+        $https = isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : '';
         if (empty($https) || $https === 'off') {
             $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : '443';
             $port = ($port === '443' || $port === '80') ? '' : $port;
@@ -307,6 +304,9 @@ class RouteOne
     )
     {
         if ($this->type !== 'front') {
+            if($this->controller===null) {
+                throw new UnexpectedValueException('Controller is not set or it is not allowed');
+            }
             $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
         } else {
             $op = sprintf($classStructure, $this->category, $this->subcategory, $this->subsubcategory);
@@ -373,22 +373,30 @@ class RouteOne
      * Note: It is an advanced version of this::callObject()<br>
      * This method uses {} to replace values.<br>
      * <ul>
-     * <li><b>{controller}</b> The name of the controller</li>
-     * <li><b>{action}</b> The current action</li>
-     * <li><b>{event}</b> The current event</li>
+     * <li><b>{controller}</b> The name of the controller. Example:/web/<b>controller</b>/action </li>
+     * <li><b>{action}</b> The current action. Example:/web/controller/<b>action</b> </li>
+     * <li><b>{verb}</b> The current verb (GET, POST,PUT or DELETE).  Example:<b>[GET]</b> /web/controller/action<br>
+     *                   The verb is ucfirst (Get instead of GET)</li>
+     * <li><b>{event}</b> The current event. Example:/web/controller/action?_event=<b>click</b></li>
      * <li><b>{type}</b> The current type of path (ws,controller,front,api)</li>
-     * <li><b>{module}</b> The current module (if module is active)</li>
-     * <li><b>{id}</b> The current id</li>
-     * <li><b>{idparent}</b> The current idparent</li>
-     * <li><b>{category}</b> The current category</li>
-     * <li><b>{subcategory}</b> The current subcategory</li>
-     * <li><b>{subsubcategory}</b> The current subsubcategory</li>
+     * <li><b>{module}</b> The current module (if module is active). Example:/web/<b>module1</b>/controller/action
+     * </li>
+     * <li><b>{id}</b> The current id. Example:/web/controller/action/<b>20</b></li>
+     * <li><b>{idparent}</b> The current idparent. Example:/web/controller/action/10/<b>20</b></li>
+     * <li><b>{category}</b> The current category (type of path is front). Example: /web/<b>food</b>/fruit/season</li>
+     * <li><b>{subcategory}</b> The current subcategory (type of path is front). Example:
+     * /web/food/<b>fruit</b>/season</li>
+     * <li><b>{subsubcategory}</b> The current subsubcategory (type of path is front). Example:
+     * /web/food/fruit/<b>season</b></li>
      * </ul>
      * <b>Example:</b>
      * <pre>
      * // controller example http://somedomain/Customer/Insert/23
      * $this->callObjectEx('cocacola\controller\{controller}Controller');
      * // it calls the method cocacola\controller\Customer::InsertAction(23,'','');
+     *
+     * $this->callObjectEx('cocacola\controller\{controller}Controller','{action}Action{verb}');
+     * // it calls the method cocacola\controller\Customer::InsertActionGet(23,'',''); or InsertActionPost, etc.
      *
      * // front example: http://somedomain/product/coffee/nescafe/1
      * $this->callObjectEx('cocacola\controller\{category}Controller',false,'{subcategory}',null,null,['subsubcategory','id']);
@@ -400,10 +408,10 @@ class RouteOne
      *                               returns the error (if any)
      * @param string $method         [optional] Default value='{action}Action'. The name of the method to call
      *                               (get/post). If method does not exists then it will use $methodGet or $methodPost
-     * @param string $methodGet      [optional] Default value='{action}Action'. The name of the method to call (get)
-     *                               but only if the method defined by $method is not defined.
-     * @param string $methodPost     [optional] Default value='{action}Action'. The name of the method to call (post)
-     *                               but only if the method defined by $method is not defined.
+     * @param string $methodGet      [optional] Default value='{action}Action{verb}'. The name of the method to call
+     *                               (get) but only if the method defined by $method is not defined.
+     * @param string $methodPost     [optional] Default value='{action}Action{verb}'. The name of the method to call
+     *                               (post) but only if the method defined by $method is not defined.
      * @param array  $arguments      [optional] Default value=['id','idparent','event'] the arguments to pass to the
      *                               function
      *
@@ -412,11 +420,16 @@ class RouteOne
      */
     public function callObjectEx(
         $classStructure = '{controller}Controller', $throwOnError = true
-        , $method = '{action}Action', $methodGet = '{action}ActionGet'
-        , $methodPost = '{action}ActionPost', $arguments = ['id', 'idparent', 'event']
+        , $method = '{action}Action', $methodGet = '{action}Action{verb}'
+        , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
     )
     {
+        if($this->controller===null) {
+            throw new UnexpectedValueException('Controller is not set or it is not allowed');
+        }
+
         $op = $this->replaceNamed($classStructure);
+
         if (!class_exists($op, true)) {
             if ($throwOnError) {
                 throw new RuntimeException("Class $op doesn't exist");
@@ -470,10 +483,9 @@ class RouteOne
     }
 
     /**
-     * Return a formatted string like vsprintf() with named placeholders.
-     *
-     * When a placeholder doesn't have a matching key in `$args`,
-     *   the placeholder is returned as is to see missing args.
+     * Return a formatted string like vsprintf() with named placeholders.<br>
+     * When a placeholder doesn't have a matching key (it's not in the whitelist <b>$allowedFields</b>), then the value
+     * is not modified and it is returned as is.
      *
      * @param string $format
      * @param string $pattern
@@ -484,7 +496,15 @@ class RouteOne
     {
         return preg_replace_callback($pattern, function ($matches) {
             $nameField = $matches[1];
-            return isset($this->{$nameField}) ?$this->{$nameField}: $matches[0];
+            if (in_array($nameField, $this->allowedFields, true) === false) {
+                return '{' . $nameField . '}';
+            }
+            if($nameField==='verb') {
+                // POST => Post
+                return ucfirst($this->{$nameField});
+            }
+            return $this->{$nameField};
+
         }, $format);
     }
 
@@ -530,7 +550,7 @@ class RouteOne
      */
     public function getCurrentUrl($withoutFilename = true)
     {
-        $sn=isset($_SERVER['SCRIPT_NAME'])?$_SERVER['SCRIPT_NAME']:'';
+        $sn = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
         if ($withoutFilename) {
             return dirname($this->getCurrentServer() . $sn);
         }
@@ -551,9 +571,9 @@ class RouteOne
         } else {
             $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : null;
         }
-        $sp=isset($_SERVER['SERVER_PORT'])?$_SERVER['SERVER_PORT']:'';
+        $sp = isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : '';
         $port = !in_array($sp, ['80', '443'], true) ? ':' . $sp . '' : '';
-        $https=isset($_SERVER['HTTPS'])?$_SERVER['HTTPS']:'';
+        $https = isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : '';
         $scheme = !empty($https) && (strtolower($https) === 'on' || $https === '1') ? 'https' : 'http';
         return $scheme . '://' . $server_name . $port;
     }
@@ -595,7 +615,7 @@ class RouteOne
             $this->module = $module;
         }
         if ($controller !== null) {
-            $this->controller = $controller;
+            $this->setController($controller);
         }
         if ($action !== null) {
             $this->action = $action;
@@ -642,7 +662,7 @@ class RouteOne
     public function reset()
     {
         // $this->base=''; base is always keep
-        $this->isFetched=false;
+        $this->isFetched = false;
         $this->defController = '';
         $this->defCategory = '';
         $this->defSubCategory = '';
@@ -654,6 +674,7 @@ class RouteOne
         $this->event = null;
         $this->idparent = null;
         $this->extra = null;
+        $this->verb = 'GET';
         return $this;
     }
 
@@ -699,7 +720,7 @@ class RouteOne
      */
     public function fetch()
     {
-        $this->isFetched=true;
+        $this->isFetched = true;
         $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
         unset($_GET['req']);
         /** @noinspection HostnameSubstitutionInspection */
@@ -739,25 +760,25 @@ class RouteOne
         }
         if (!$this->type) {
             $this->type = 'controller';
-            $this->controller = (!$path[$id]) ? $this->defController : $path[$id];
+            $this->setController( (!$path[$id]) ? $this->defController : $path[$id]);
             $id++;
         }
         switch ($this->type) {
             case 'ws':
             case 'api':
                 //$id++; [fixed]
-                $this->controller = isset($path[$id])&& $path[$id] ? $path[$id] : $this->defController;
+                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
                 $id++;
                 break;
             case 'controller':
-                $this->controller = isset($path[$id])&& $path[$id] ? $path[$id] : $this->defController;
+                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
                 $id++;
                 break;
             case 'front':
                 // it is processed differently.
-                $this->category = isset($path[$id]) && $path[$id] ? $path[$id]: $this->defCategory;
+                $this->category = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defCategory;
                 $id++;
-                $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id]: $this->defSubCategory;
+                $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubCategory;
                 $id++;
                 $this->subsubcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubSubCategory;
                 /** @noinspection PhpUnusedLocalVariableInspection */
@@ -935,6 +956,11 @@ class RouteOne
      */
     public function setController($controller)
     {
+        if(is_array($this->allowedControllers) && !in_array($controller,$this->allowedControllers,true)) {
+            // there is a list of controllers and this value is not allowed.
+            $this->controller=null;
+            return $this;
+        }
         $this->controller = $controller;
         return $this;
     }

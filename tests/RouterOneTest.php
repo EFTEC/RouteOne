@@ -50,6 +50,19 @@ class RouterOneTest extends TestCase
         self::assertEquals('module1',$this->ro->module);
         self::assertEquals('controller1',$this->ro->controller);
         self::assertEquals('action1',$this->ro->action);
+        self::assertEquals('POST',$this->ro->verb);
+        unset($_SERVER['REQUEST_METHOD']);
+    }
+    public function testMisc2() {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_SERVER['REQUEST_METHOD']='PUT';
+        $_GET['req']='module1/controller1/action1'; // bbb is for api (but we are forcing it the definition of it.
+        $this->ro=new RouteOne('http://www.example.dom','api',true,true);
+        self::assertEquals(false,$this->ro->isPostBack());
+        self::assertEquals('module1',$this->ro->module);
+        self::assertEquals('controller1',$this->ro->controller);
+        self::assertEquals('action1',$this->ro->action);
+        self::assertEquals('PUT',$this->ro->verb);
         unset($_SERVER['REQUEST_METHOD']);
     }
     public function testAPIWS() {
@@ -155,6 +168,59 @@ class RouterOneTest extends TestCase
         self::assertInstanceOf(RouteOne::class,$this->ro->setAction(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setController(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->reset());
+
+    }
+    /**
+     * @throws \Exception
+     */
+    public function testCallNotAllowed() {
+
+        // it must not fail
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
+        $this->ro->allowedControllers=['category'];
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+        $falla=false;
+        try {
+            $this->ro->callObject('eftec\tests\%sController');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(false,$falla);
+
+        $falla=false;
+        try {
+            $this->ro->callObjectEx('eftec\tests\{controller}Controller');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(false,$falla);
+
+        // it must fails
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
+        $this->ro->allowedControllers=['aaa'];
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+
+        $falla=false;
+        try {
+            $this->ro->callObject('eftec\tests\%sController');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(true,$falla);
+
+        $falla=false;
+        try {
+            $this->ro->callObjectEx('eftec\tests\{controller}Controller');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(true,$falla);
+
+        $this->ro->allowedControllers=null;
 
     }
 
