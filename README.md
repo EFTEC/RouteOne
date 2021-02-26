@@ -627,16 +627,45 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 
 ## Whitelist
 
-| Field               | Description                                                  | Example                                                      |
-| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| $allowedVerbs       | A list with allowed verbs                                    | $this->allowedVerbs=['GET', 'POST', 'PUT', 'DELETE'];        |
-| $allowedFields      | A list with allowed fields used by callObjectEx(             | $this->$allowedFields=['controller', 'action', 'verb', 'event', 'type', 'module', 'id'<br />, 'idparent','category', 'subcategory', 'subsubcategory']; |
-| $allowedControllers | A list with allowed controllers without namespaces (if null then it allows any controller) | $this->$allowedControllers=['Purchase','Invoice','Customer'];<br />$this->$allowedControllers=null // allows any controller; |
+| Field          | Description                                                  | Example                                                      |
+| -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| $allowedVerbs  | A list with allowed verbs                                    | $this->allowedVerbs=['GET', 'POST', 'PUT', 'DELETE'];        |
+| $allowedFields | A list with allowed fields used by **callObjectEx()**        | $this->allowedFields=['controller', 'action', 'verb', 'event', 'type', 'module', 'id'<br />, 'idparent','category', 'subcategory', 'subsubcategory']; |
+| setWhitelist() | It sets an associative array with the whitelist to **controller**, **action**, **category**, **subcategory**, **subsubcategory** and **module**. <br />If not set (null default value), then it allows any entry.<br />Currently it only work with **controller** and **category** | $this->setWhitelist('controller','Purchase','Invoice','Customer');<br />$this->setWhitelist('controller',null) // allows any controller; |
+
+### Whitelist input.
+Whitelisting a method allows two operations:
+
+* To whitelist an input, for example, only allowing "controllers" that they are inside a list.
+* Also, it allows to define the case of an element.
+
+For example:
+
+```php
+// Example, value not in the whitelist: someweb.dom/customer/list
+$this->setWhiteList('controller',['Product','Client']);
+$this->fetch();
+var_dump($this->controller); // null or the default value
+var_dump($this->notAllowed); // true (whitelist error)
+
+
+// Example, value in the whitelist but with the wrong case: someweb.dom/customer/list
+$this->setWhiteList('controller',['Customer']);
+$this->fetch();
+var_dump($this-controller) // it shows "Customer" instead of "customer"
+var_dump($this->notAllowed); // false (not error with the validation of the whitelist)    
+    
+// reset whitelist for controllers
+$this->setWhiteList('controller',null);    
+    
+
+```
+
 
 
 ### $type 
 
-it returns the current type of url.
+it returns the current type of URL used.
 
 > Also obtained via getType()
 
@@ -670,6 +699,10 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-02-26 1.19
+   * **setWhiteList()** now works with **controller** and **category**
+   * **setWhiteList()** also works to define the correct proper case of the elements.
+   * The method **callObjectEx()** allows to define the case. 
 * 2021-02-26 1.18
    * new fields $verb (it gets the current verb, example GET, POST, etc.)
    * new whitelist elements:

@@ -4,7 +4,7 @@ namespace eftec\tests;
 
 use eftec\routeone\RouteOne;
 use PHPUnit\Framework\TestCase;
-class categoryController {
+class categoRYController {
     /** @noinspection PhpUnused */
     public function actiontestAction($id, $idparent='', $event='') {
         echo 'action test called';
@@ -178,8 +178,8 @@ class RouterOneTest extends TestCase
         // it must not fail
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
-        $this->ro->allowedControllers=['category'];
-        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->setWhitelist('controller',['categoRY']);
+        $_GET['req']='CAtegory/actiontest/id/parentid';
         $this->ro->fetch();
         $falla=false;
         try {
@@ -188,6 +188,7 @@ class RouterOneTest extends TestCase
             $falla=true;
         }
         self::assertEquals(false,$falla);
+        self::assertEquals('categoRY',$this->ro->controller);
 
         $falla=false;
         try {
@@ -200,7 +201,7 @@ class RouterOneTest extends TestCase
         // it must fails
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
-        $this->ro->allowedControllers=['aaa'];
+        $this->ro->setWhitelist('controller',['aaa']);
         $_GET['req']='category/actiontest/id/parentid';
         $this->ro->fetch();
 
@@ -220,7 +221,62 @@ class RouterOneTest extends TestCase
         }
         self::assertEquals(true,$falla);
 
-        $this->ro->allowedControllers=null;
+        $this->ro->setWhiteList('controller',null);
+
+    }
+    /**
+     * @throws \Exception
+     */
+    public function testCallNotAllowedCategory() {
+
+        // it must not fail
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->type='front';
+        $this->ro->setCurrentServer('www.example.dom');
+        $this->ro->setWhitelist('category',['categoRY']);
+        $_GET['req']='CAtegory/actiontest/id/parentid';
+        $this->ro->fetch();
+        $falla=false;
+        try {
+            $this->ro->callObject('eftec\tests\%sController');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(false,$falla);
+        self::assertEquals('categoRY',$this->ro->category);
+
+        $falla=false;
+        $_GET['req']='CAtegory/actiontest/id/parentid';
+        $this->ro->fetch();
+        try {
+            $this->ro->callObjectEx('eftec\tests\{category}Controller',true,'{subcategory}Action');
+        } catch(\Exception $ex) {
+
+            $falla=true;
+        }
+        self::assertEquals(false,$falla);
+
+        // it must fails
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
+        $this->ro->setWhitelist('category',['aaa']);
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+
+        $falla=false;
+
+        self::assertEquals(false,$this->ro->notAllowed);
+
+        $this->ro->fetch();
+        $falla=false;
+        try {
+            $this->ro->callObjectEx('eftec\tests\{category}Controller');
+        } catch(\Exception $ex) {
+            $falla=true;
+        }
+        self::assertEquals(true,$falla);
+
+        $this->ro->setWhiteList('category',null);
 
     }
 

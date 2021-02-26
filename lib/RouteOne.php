@@ -16,7 +16,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.18 2021-02-25
+ * @version   1.19 2021-02-26
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -58,12 +58,26 @@ class RouteOne
     /** @var string[] Allowed fields to be read and parsed by callObjectEx() */
     public $allowedFields = ['controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
         , 'subcategory', 'subsubcategory'];
-    /**
-     * @var null|array It is an associative array with name of controllers allowed or null to allows any controller. It
-     *                 is case sensitive.<br>
-     *                 <b>Example:</b> $this->$allowedControllers=['Purchase','Invoice','Customer'];
-     */
-    public $allowedControllers;
+    /** @var array[] it holds the whitelist. Ex: ['controller'=>['a1','a2','a3']]  */
+    protected $whitelist=[
+        'controller'=>null,
+        'category'=>null,
+        'action'=>null,
+        'subcategory'=>null,
+        'subsubcategory'=>null,
+        'module'=>null
+    ];
+    protected $whitelistLower=[
+        'controller'=>null,
+        'category'=>null,
+        'action'=>null,
+        'subcategory'=>null,
+        'subsubcategory'=>null,
+        'module'=>null
+    ];
+
+    /** @var bool if true then the whitelist validation failed and the value is not allowed  */
+    public $notAllowed=false;
 
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
@@ -134,11 +148,11 @@ class RouteOne
      *
      * @return $this
      */
-    public function setDefaultValues($defController = 'Home', $defAction = 'index', $defCategory = 'Home'
+    public function setDefaultValues($defController = '', $defAction = '', $defCategory = ''
         , $defSubCategory = '', $defSubSubCategory = '')
     {
         if ($this->isFetched) {
-            throw new RuntimeException('RouteOne: you cant setDefaultValues() after fetch()');
+            throw new RuntimeException("RouteOne: you can't call setDefaultValues() after fetch()");
         }
         $this->defController = $defController;
         $this->defAction = $defAction;
@@ -146,6 +160,26 @@ class RouteOne
         $this->defSubCategory = $defSubCategory;
         $this->defSubSubCategory = $defSubSubCategory;
         return $this;
+    }
+
+
+    /**
+     * It is an associative array with name of controllers allowed or null to allows any controller.<br>
+     * <b>Example:</b>
+     * <pre>
+     * $this->setWhiteList('controller',['Purchase','Invoice','Customer']);
+     * </pre>
+     * <b>Note:</b> this must be executed before fetch()
+     * @param string $type=['controller','category','action','subcategory','subsubcategory','module'][$i]
+     * @param array|null $array if null (default value) then we don't validate the information.
+     */
+    public function setWhiteList($type,$array) {
+        if ($this->isFetched && $array!==null) {
+            throw new RuntimeException("RouteOne: you can't call setWhiteList() after fetch()");
+        }
+        $type=strtolower($type);
+        $this->whitelist[$type]=$array;
+        $this->whitelistLower[$type]=is_array($array) ? array_map('strtolower', $array) : null;
     }
 
 
@@ -303,6 +337,9 @@ class RouteOne
         , $arguments = ['id', 'idparent', 'event']
     )
     {
+        if($this->notAllowed===true) {
+            throw new UnexpectedValueException('Input is not allowed');
+        }
         if ($this->type !== 'front') {
             if($this->controller===null) {
                 throw new UnexpectedValueException('Controller is not set or it is not allowed');
@@ -389,6 +426,13 @@ class RouteOne
      * <li><b>{subsubcategory}</b> The current subsubcategory (type of path is front). Example:
      * /web/food/fruit/<b>season</b></li>
      * </ul>
+     * <b>Note:</b> You can also convert the case
+     * <ul>
+     * <li><b>{uc_*tag*}</b> uppercase first</li>
+     * <li><b>{lc_*tag*}</b> lowercase first</li>
+     * <li><b>{u_*tag*}</b> uppercase</li>
+     * <li><b>{l_*tag*}</b> lowercase</li>
+     * </ul>
      * <b>Example:</b>
      * <pre>
      * // controller example http://somedomain/Customer/Insert/23
@@ -424,8 +468,8 @@ class RouteOne
         , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
     )
     {
-        if($this->controller===null) {
-            throw new UnexpectedValueException('Controller is not set or it is not allowed');
+        if($this->notAllowed===true) {
+            throw new UnexpectedValueException('Input is not allowed');
         }
 
         $op = $this->replaceNamed($classStructure);
@@ -485,7 +529,8 @@ class RouteOne
     /**
      * Return a formatted string like vsprintf() with named placeholders.<br>
      * When a placeholder doesn't have a matching key (it's not in the whitelist <b>$allowedFields</b>), then the value
-     * is not modified and it is returned as is.
+     * is not modified and it is returned as is.<br>
+     * If the name starts with uc_,lc_,u_,l_ then it is converted into ucfirst,lcfirst,uppercase or lowercase.
      *
      * @param string $format
      * @param string $pattern
@@ -499,11 +544,26 @@ class RouteOne
             if (in_array($nameField, $this->allowedFields, true) === false) {
                 return '{' . $nameField . '}';
             }
-            if($nameField==='verb') {
-                // POST => Post
-                return ucfirst($this->{$nameField});
+            $result=$this->{$nameField};
+            if(strpos($result,'_')>0) {
+                $x=explode('_',$result)[0];
+                switch ($x) {
+                    case 'uc':
+                        $result=ucfirst(strtolower($result));
+                        break;
+                    case 'lc':
+                        $result=lcfirst(strtoupper($result));
+                        break;
+                    case 'u':
+                        $result=strtoupper($result);
+                        break;
+                    case 'l':
+                        $result=strtolower($result);
+                        break;
+                }
             }
-            return $this->{$nameField};
+
+            return $result;
 
         }, $format);
     }
@@ -643,7 +703,7 @@ class RouteOne
             $this->module = $module;
         }
         if ($category) {
-            $this->category = $category;
+            $this->setCategory($category);
         }
         if ($subcategory) {
             $this->subcategory = $subcategory;
@@ -675,6 +735,7 @@ class RouteOne
         $this->idparent = null;
         $this->extra = null;
         $this->verb = 'GET';
+        $this->notAllowed=false;
         return $this;
     }
 
@@ -720,6 +781,7 @@ class RouteOne
      */
     public function fetch()
     {
+        $this->notAllowed=false; // reset
         $this->isFetched = true;
         $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
         unset($_GET['req']);
@@ -733,7 +795,7 @@ class RouteOne
         $this->queries = $_GET;
         unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
         $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
-        if (is_array($this->identify)) {
+        if (is_array($this->identify) && $this->type==='') {
             foreach ($this->identify as $ty => $path) {
                 if ($path === '') {
                     $this->type = $ty;
@@ -776,7 +838,7 @@ class RouteOne
                 break;
             case 'front':
                 // it is processed differently.
-                $this->category = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defCategory;
+                $this->setCategory(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defCategory);
                 $id++;
                 $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubCategory;
                 $id++;
@@ -949,16 +1011,21 @@ class RouteOne
 
     /**
      *
-     *
      * @param  $controller
      *
      * @return RouteOne
      */
     public function setController($controller)
     {
-        if(is_array($this->allowedControllers) && !in_array($controller,$this->allowedControllers,true)) {
-            // there is a list of controllers and this value is not allowed.
-            $this->controller=null;
+        if(is_array($this->whitelist['controller']) ) { // there is a whitelist
+            if (in_array(strtolower($controller),$this->whitelistLower['controller'],true)) {
+                $p=array_search($controller,$this->whitelistLower['controller'],true);
+                $this->controller=$this->whitelist['controller'][$p]; // we returned the same value but with the right case.
+                return $this;
+            }
+            // and this value is not found there.
+            $this->controller=$this->defController;
+            $this->notAllowed=true;
             return $this;
         }
         $this->controller = $controller;
@@ -1084,6 +1151,30 @@ class RouteOne
     public function getCategory()
     {
         return $this->category;
+    }
+    /**
+     *
+     * @param  $category
+     *
+     * @return RouteOne
+     */
+    public function setCategory($category)
+    {
+        if(is_array($this->whitelist['category']) ) { // there is a whitelist
+            if (in_array(strtolower($category),$this->whitelistLower['category'],true)) {
+                $p=array_search($category,$this->whitelistLower['category'],true);
+
+                $this->category=$this->whitelist['category'][$p]; // we returned the same value but with the right case.
+                return $this;
+            }
+            // and this value is not found there.
+            $this->category=$this->defCategory;
+
+            $this->notAllowed=true;
+            return $this;
+        }
+        $this->category = $category;
+        return $this;
     }
 
     /**
