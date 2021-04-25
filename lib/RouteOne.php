@@ -1,10 +1,11 @@
-<?php /** @noinspection PhpUnused */
-/** @noinspection UnknownInspectionInspection */
-/** @noinspection PhpMissingParamTypeInspection */
-/** @noinspection PhpMissingReturnTypeInspection */
-/** @noinspection PrintfScanfArgumentsInspection */
-
-/** @noinspection ReturnTypeCanBeDeclaredInspection */
+<?php
+/** @noinspection PhpUnused
+ * @noinspection UnknownInspectionInspection
+ * @noinspection PhpMissingParamTypeInspection
+ * @noinspection PhpMissingReturnTypeInspection
+ * @noinspection PrintfScanfArgumentsInspection
+ * @noinspection ReturnTypeCanBeDeclaredInspection
+ */
 
 namespace eftec\routeone;
 
