@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpMissingParamTypeInspection */
+<?php /** @noinspection PhpUnused */
+/** @noinspection UnknownInspectionInspection */
+/** @noinspection PhpMissingParamTypeInspection */
 /** @noinspection PhpMissingReturnTypeInspection */
 /** @noinspection PrintfScanfArgumentsInspection */
 
@@ -16,7 +18,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.19 2021-02-26
+ * @version   1.20 2021-04-24
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -45,8 +47,6 @@ class RouteOne
     public $subcategory;
     /** @var string The current sub-sub-category. It is useful for the type 'front' */
     public $subsubcategory;
-    /** @var null|array It is an associative array that helps to identify the api and ws route. */
-    protected $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
     /** @var boolean its true if the page is POST, otherwise (GET,DELETE or PUT) it is false. */
@@ -58,29 +58,31 @@ class RouteOne
     /** @var string[] Allowed fields to be read and parsed by callObjectEx() */
     public $allowedFields = ['controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
         , 'subcategory', 'subsubcategory'];
-    /** @var array[] it holds the whitelist. Ex: ['controller'=>['a1','a2','a3']]  */
-    protected $whitelist=[
-        'controller'=>null,
-        'category'=>null,
-        'action'=>null,
-        'subcategory'=>null,
-        'subsubcategory'=>null,
-        'module'=>null
-    ];
-    protected $whitelistLower=[
-        'controller'=>null,
-        'category'=>null,
-        'action'=>null,
-        'subcategory'=>null,
-        'subsubcategory'=>null,
-        'module'=>null
-    ];
-
-    /** @var bool if true then the whitelist validation failed and the value is not allowed  */
-    public $notAllowed=false;
-
+    /** @var bool if true then the whitelist validation failed and the value is not allowed */
+    public $notAllowed = false;
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
+    public $httpHost = '';
+    public $requestUri = '';
+    /** @var null|array It is an associative array that helps to identify the api and ws route. */
+    protected $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
+    /** @var array[] it holds the whitelist. Ex: ['controller'=>['a1','a2','a3']] */
+    protected $whitelist = [
+        'controller' => null,
+        'category' => null,
+        'action' => null,
+        'subcategory' => null,
+        'subsubcategory' => null,
+        'module' => null
+    ];
+    protected $whitelistLower = [
+        'controller' => null,
+        'category' => null,
+        'action' => null,
+        'subcategory' => null,
+        'subsubcategory' => null,
+        'module' => null
+    ];
     /**
      * @var string|null=['api','ws','controller','front'][$i]
      */
@@ -90,38 +92,74 @@ class RouteOne
     private $defCategory;
     private $defSubCategory;
     private $defSubSubCategory;
+    private $defModule;
+    /** @var array|bool it stores the list of path used for the modules */
+    private $moduleList;
     private $isModule;
+    /**
+     * <ul>
+     * <li><b>none:</b>if the path uses a module then the <b>type</b> is calculated normally (default)</li>
+     * <li><b>modulefront:</b>if the path uses a module then the <b>type</b> is <b>front</b>. If it doesn't use a module
+     * then it is a <b>controller, api or ws</b></li>
+     * <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is <b>controller, api or ws</b>.
+     * If it doens't use module then it is <b>front</b></li>
+     * </ul>
+     * @var string=['none','modulefront','nomodulefront'][$i]
+     */
+    private $moduleStrategy;
     private $isFetched = false;
-
-    public $httpHost = '';
-    public $requestUri = '';
 
     /**
      * RouteOne constructor.
      *
-     * @param string $base        base url with or without trailing slash (it's removed if its set).<br>
-     *                            Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
-     * @param string $forcedType  =['api','ws','controller','front'][$i]<br>
-     *                            <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
-     *                            <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
-     *                            <b>controller</b> then it expects a path as controller/action/id/idparent<br>
-     *                            <b>front</b> then it expects a path as /category/subc/subsubc/id<br>
-     * @param bool   $isModule    if true then the route start reading a module name<br>
-     *                            <b>false</b> controller/action/id/idparent<br>
-     *                            <b>true</b> module/controller/action/id/idparent<br>
-     * @param bool   $fetchValues (default false), if true then it also calls the method fetch()
+     * @param string     $base           base url with or without trailing slash (it's removed if its set).<br>
+     *                                   Example: ".","http://domain.dom", "http://domain.dom/subdomain"<br>
+     * @param string     $forcedType     =['api','ws','controller','front'][$i]<br>
+     *                                   <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
+     *                                   <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
+     *                                   <b>controller</b> then it expects a path as controller/action/id/idparent<br>
+     *                                   <b>front</b> then it expects a path as /category/subc/subsubc/id<br>
+     * @param bool|array $isModule       if true then the route start reading a module name<br>
+     *                                   <b>false</b> controller/action/id/idparent<br>
+     *                                   <b>true</b> module/controller/action/id/idparent<br>
+     *                                   <b>array</b> if the value is an array then the value is determined if the
+     *                                   first
+     *                                   part of the path is in the array. Example
+     *                                   ['modulefolder1','modulefolder2']<br>
+     * @param bool       $fetchValues    (default false), if true then it also calls the method fetch()
+     * @param string     $moduleStrategy =['none','modulefront','nomodulefront'][$i] <br>
+     *                                   it changes the strategy to determine the type of url determined if the path has
+     *                                   a module or not.<br>
+     *                                   <b>$forcedType</b> must be null, otherwise this value is not calculated.<br>
+     *                                   <ul>
+     *                                   <li><b>none:</b>if the path uses a module then the <b>type</b> is calculated
+     *                                   normally (default)</li>
+     *                                   <li><b>modulefront:</b>if the path uses a module then the <b>type</b> is
+     *                                   <b>front</b>. If it doesn't use a module then it is a <b>controller, api or
+     *                                   ws</b></li>
+     *                                   <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is
+     *                                   <b>controller, api or ws</b>. If it doens't use module then it is
+     *                                   <b>front</b></li>
+     *                                   </ul>
      */
-    public function __construct($base = '', $forcedType = null, $isModule = false, $fetchValues = false)
+    public function __construct($base = '', $forcedType = null, $isModule = false, $fetchValues = false, $moduleStrategy = 'none')
     {
         $this->base = rtrim($base, '/');
         $this->forceType = $forcedType;
+        $this->moduleStrategy = $moduleStrategy;
         if ($forcedType !== null) {
             $this->type = $forcedType;
         }
-        $this->isModule = $isModule;
+        if (is_bool($isModule)) {
+            $this->moduleList = null;
+            $this->isModule = $isModule;
+        } else {
+            $this->moduleList = $isModule;
+            $this->isModule = false;
+        }
         $this->isPostBack = false;
 
-        if (isset($_SERVER['REQUEST_METHOD']) && in_array($_SERVER['REQUEST_METHOD'],$this->allowedVerbs, true)) {
+        if (isset($_SERVER['REQUEST_METHOD']) && in_array($_SERVER['REQUEST_METHOD'], $this->allowedVerbs, true)) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $this->isPostBack = true;
             }
@@ -140,16 +178,16 @@ class RouteOne
      * It is uses to set a default route if the value is empty or its missing.<br>
      * <b>Note:It must be set before fetch().</b>
      *
-     * @param string $defController Default Controller
-     * @param string $defAction     Default action
-     * @param string $defCategory
-     * @param string $defSubCategory
-     * @param string $defSubSubCategory
-     *
+     * @param string $defController     Default Controller
+     * @param string $defAction         Default action
+     * @param string $defCategory       Default category
+     * @param string $defSubCategory    Default subcategory
+     * @param string $defSubSubCategory The default sub-sub-category
+     * @param string $defModule         The default module.
      * @return $this
      */
     public function setDefaultValues($defController = '', $defAction = '', $defCategory = ''
-        , $defSubCategory = '', $defSubSubCategory = '')
+        , $defSubCategory = '', $defSubSubCategory = '', $defModule = '')
     {
         if ($this->isFetched) {
             throw new RuntimeException("RouteOne: you can't call setDefaultValues() after fetch()");
@@ -159,29 +197,164 @@ class RouteOne
         $this->defCategory = $defCategory;
         $this->defSubCategory = $defSubCategory;
         $this->defSubSubCategory = $defSubSubCategory;
+        $this->defModule = $defModule;
         return $this;
     }
 
+    /**
+     *
+     * It uses the next strategy to obtain the parameters;<br>
+     * <ul>
+     * <li><b>If the type is not frontend:</b></li>
+     * <li><b>api:</b>. Expected path: api/Controller/action/id/idparent?_event=xx&extra=xxx</li>
+     * <li><b>ws:</b>. Expected path: ws/Controller/action/id/idparent?_event=xx&extra=xxx</li>
+     * <li><b>controller:</b>. Expected path: Controller/action/id/idparent?_event=xx&extra=xxx</li>
+     * <li><b>controller (using module):</b>. Module/Controller/action/id/idparent?_event=xx&extra=xxx</li>
+     * <li><b>api (using module):</b>. Module/api/ControllerApi/action/id/idparent/?_event=xx&extra=xxx</li>
+     * <li><b>ws (using module):</b>. Module/ws/ControllerWS/action/id/idparent/?_event=xx&extra=xxx</li>
+     * <li><b>If the type is frontend:</b></li>
+     * <li><b>frontend:</b>. Expected path: category/subcategory/subsubcategory/id/idparent?_event=xx&extra=xxx</li>
+     * <li><b>frontend (using module):</b>.
+     * Module/category/subcategory/subsubcategory/id/idparent?_event=xx&extra=xxx</li>
+     * </ul>
+     */
+    public function fetch()
+    {
+        $this->notAllowed = false; // reset
+        $this->isFetched = true;
+        $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
+        unset($_GET['req']);
+        /** @noinspection HostnameSubstitutionInspection */
+        $this->httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        $this->requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        // nginx returns a path as /aaa/bbb apache aaa/bbb
+        if ($urlFetched !== '') {
+            $urlFetched = ltrim($urlFetched, '/');
+        }
+        $this->queries = $_GET;
+        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
+        $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
+        if (is_array($this->identify) && $this->type === '') {
+            foreach ($this->identify as $ty => $path) {
+                if ($path === '') {
+                    $this->type = $ty;
+                    break;
+                }
+                if (strpos($urlFetched, $path) === 0) {
+                    $urlFetched = ltrim($this->str_replace_ex($path, '', $urlFetched, 1), '/');
+                    $this->type = $ty;
+                    break;
+                }
+            }
+        }
+        $path = explode('/', $urlFetched);
+        //$first = $path[0] ?? $this->defController;
+        if (isset($path[0]) && $this->moduleList !== null) {
+            // if moduleArray has values then we find if the current path is a module or not.
+            $this->isModule = in_array($path[0], $this->moduleList, true);
+        }
+        $id = 0;
+        if ($this->isModule) {
+            $this->module = isset($path[$id]) ? $path[$id] : $this->defModule;
+            $id++;
+            if ($this->moduleStrategy === 'modulefront') {
+                // the path is not a module, then type is set as front.
+                $this->type = 'front';
+            }
+        } else {
+            $this->module = $this->defModule;
+            if ($this->moduleStrategy === 'nomodulefront') {
+                // the path is not a module, then type is set as front.
+                $this->type = 'front';
+            }
+        }
+        if ($this->forceType !== null) {
+            $this->type = $this->forceType;
+        }
+        if (!$this->type) {
+            $this->type = 'controller';
+            $this->setController((!$path[$id]) ? $this->defController : $path[$id]);
+            $id++;
+        }
+        switch ($this->type) {
+            case 'ws':
+            case 'api':
+                //$id++; [fixed]
+                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
+                $id++;
+                break;
+            case 'controller':
+                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
+                $id++;
+                break;
+            case 'front':
+                // it is processed differently.
+                $this->setCategory(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defCategory);
+                $id++;
+                $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubCategory;
+                $id++;
+                $this->subsubcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubSubCategory;
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $id++;
+                $this->id = end($path); // id is the last element of the path
+                $this->event = $this->request('_event');
+                $this->extra = $this->request('_extra');
+                return;
+        }
+
+        $this->action = isset($path[$id]) ? $path[$id] : null;
+        $id++;
+        $this->action = $this->action ?: $this->defAction; // $this->action is never undefined, so we don't need isset
+        $this->id = isset($path[$id]) ? $path[$id] : null;
+        $id++;
+        $this->idparent = isset($path[$id]) ? $path[$id] : null;
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $id++;
+        $this->event = $this->request('_event');
+        $this->extra = $this->request('_extra');
+    }
+
+    protected function str_replace_ex($search, $replace, $subject, $limit = 99999)
+    {
+        return implode($replace, explode($search, $subject, $limit + 1));
+    }
+
+    private function request($id)
+    {
+        if (isset($_POST[$id])) {
+            $v = $_POST[$id];
+        } else {
+            $v = isset($_GET[$id]) ? $_GET[$id] : null;
+        }
+        return $v;
+    }
 
     /**
-     * It is an associative array with name of controllers allowed or null to allows any controller.<br>
+     * It is an associative array with the allowed paths or null (default behaviour) to allows any path.<br>
+     * The comparison ignores cases but the usage is case sensitive and it uses the case used here<br>
+     * For example: if we allowed the controller called "Controller1" then:<br>
+     * <ul>
+     * <li>somedomain.dom/Controller1 is accepted</li>
+     * <li>somedomain.dom/controller1  is also accepted (and controller is equals as "Controller1")</li>
+     * </ul>
      * <b>Example:</b>
      * <pre>
+     * // we only want to allow the controllers called Purchase, Invoice and Customer.
      * $this->setWhiteList('controller',['Purchase','Invoice','Customer']);
      * </pre>
      * <b>Note:</b> this must be executed before fetch()
-     * @param string $type=['controller','category','action','subcategory','subsubcategory','module'][$i]
+     * @param string     $type  =['controller','category','action','subcategory','subsubcategory','module'][$i]
      * @param array|null $array if null (default value) then we don't validate the information.
      */
-    public function setWhiteList($type,$array) {
-        if ($this->isFetched && $array!==null) {
+    public function setWhiteList($type, $array)
+    {
+        if ($this->isFetched && $array !== null) {
             throw new RuntimeException("RouteOne: you can't call setWhiteList() after fetch()");
         }
-        $type=strtolower($type);
-        $this->whitelist[$type]=$array;
-        $this->whitelistLower[$type]=is_array($array) ? array_map('strtolower', $array) : null;
+        $type = strtolower($type);
+        $this->whitelist[$type] = $array;
+        $this->whitelistLower[$type] = is_array($array) ? array_map('strtolower', $array) : null;
     }
-
 
     /**
      * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
@@ -202,37 +375,6 @@ class RouteOne
         if (strpos($url, 'www.') === false) {
             $location = $this->getLocation($https);
             $location .= '//www.' . $url . $this->requestUri;
-            if ($redirect) {
-                header('HTTP/1.1 301 Moved Permanently');
-                header('Location: ' . $location);
-                die(1);
-            }
-            return $location;
-        }
-        if ($https) {
-            return $this->alwaysHTTPS(false);
-        }
-        return null;
-    }
-
-    /**
-     * If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>
-     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-     * <b>Note: If this code needs to redirect, then we should stop stops the execution of any other code. Usually,
-     * it must be called at the top of the code</b>
-     *
-     * @param bool $https    If true the it also redirect to https
-     * @param bool $redirect if true (default) then it redirect the header. If false, then it returns the new url
-     * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
-     *                       Otherwise, if $redirect=false, it returns the full url to redirect.
-     */
-    public function alwaysNakedDomain($https = false, $redirect = true)
-    {
-        $url = $this->httpHost;
-        if (strpos($url, 'www.') === 0) {
-            $host = substr($url, 4); // we remove the www. at first
-            $location = $this->getLocation($https);
-            $location .= '//' . $host . $this->requestUri;
             if ($redirect) {
                 header('HTTP/1.1 301 Moved Permanently');
                 header('Location: ' . $location);
@@ -294,6 +436,37 @@ class RouteOne
     }
 
     /**
+     * If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>
+     * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
+     * <b>Note: If this code needs to redirect, then we should stop stops the execution of any other code. Usually,
+     * it must be called at the top of the code</b>
+     *
+     * @param bool $https    If true the it also redirect to https
+     * @param bool $redirect if true (default) then it redirect the header. If false, then it returns the new url
+     * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
+     *                       Otherwise, if $redirect=false, it returns the full url to redirect.
+     */
+    public function alwaysNakedDomain($https = false, $redirect = true)
+    {
+        $url = $this->httpHost;
+        if (strpos($url, 'www.') === 0) {
+            $host = substr($url, 4); // we remove the www. at first
+            $location = $this->getLocation($https);
+            $location .= '//' . $host . $this->requestUri;
+            if ($redirect) {
+                header('HTTP/1.1 301 Moved Permanently');
+                header('Location: ' . $location);
+                die(1);
+            }
+            return $location;
+        }
+        if ($https) {
+            return $this->alwaysHTTPS(false);
+        }
+        return null;
+    }
+
+    /**
      * It creates and object (for example, a Controller object) and calls the method.<br>
      * <b>Example:</b> (type controller,api,ws)
      * <pre>
@@ -337,11 +510,11 @@ class RouteOne
         , $arguments = ['id', 'idparent', 'event']
     )
     {
-        if($this->notAllowed===true) {
+        if ($this->notAllowed === true) {
             throw new UnexpectedValueException('Input is not allowed');
         }
         if ($this->type !== 'front') {
-            if($this->controller===null) {
+            if ($this->controller === null) {
                 throw new UnexpectedValueException('Controller is not set or it is not allowed');
             }
             $op = sprintf($classStructure, $this->controller, $this->module, $this->type);
@@ -394,7 +567,7 @@ class RouteOne
             }
         } else {
             $pb = $this->isPostBack ? '(POST)' : '(GET)';
-            $msgError = "Action [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+            $msgError = "Action [$actionRequest or $actionGetPost] $pb not found for class [$op]";
             $msgError = strip_tags($msgError);
             if ($throwOnError) {
                 throw new UnexpectedValueException($msgError);
@@ -468,7 +641,7 @@ class RouteOne
         , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
     )
     {
-        if($this->notAllowed===true) {
+        if ($this->notAllowed === true) {
             throw new UnexpectedValueException('Input is not allowed');
         }
 
@@ -515,7 +688,7 @@ class RouteOne
             }
         } else {
             $pb = $this->isPostBack ? '(POST)' : '(GET)';
-            $msgError = "Action ex [{$actionRequest} or {$actionGetPost}] $pb not found for class [{$op}]";
+            $msgError = "Action ex [$actionRequest or $actionGetPost] $pb not found for class [$op]";
             $msgError = strip_tags($msgError);
             if ($throwOnError) {
                 throw new UnexpectedValueException($msgError);
@@ -533,32 +706,31 @@ class RouteOne
      * If the name starts with uc_,lc_,u_,l_ then it is converted into ucfirst,lcfirst,uppercase or lowercase.
      *
      * @param string $format
-     * @param string $pattern
      *
      * @return string
      */
-    private function replaceNamed($format, $pattern = "/\{(\w+)\}/")
+    private function replaceNamed($format)
     {
-        return preg_replace_callback($pattern, function ($matches) {
+        return preg_replace_callback("/{(\w+)}/", function ($matches) {
             $nameField = $matches[1];
             if (in_array($nameField, $this->allowedFields, true) === false) {
                 return '{' . $nameField . '}';
             }
-            $result=$this->{$nameField};
-            if(strpos($result,'_')>0) {
-                $x=explode('_',$result)[0];
+            $result = $this->{$nameField};
+            if (strpos($result, '_') > 0) {
+                $x = explode('_', $result)[0];
                 switch ($x) {
                     case 'uc':
-                        $result=ucfirst(strtolower($result));
+                        $result = ucfirst(strtolower($result));
                         break;
                     case 'lc':
-                        $result=lcfirst(strtoupper($result));
+                        $result = lcfirst(strtoupper($result));
                         break;
                     case 'u':
-                        $result=strtoupper($result);
+                        $result = strtoupper($result);
                         break;
                     case 'l':
-                        $result=strtolower($result);
+                        $result = strtolower($result);
                         break;
                 }
             }
@@ -719,6 +891,9 @@ class RouteOne
         return $this;
     }
 
+    // .htaccess:
+    // RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]
+
     public function reset()
     {
         // $this->base=''; base is always keep
@@ -727,18 +902,20 @@ class RouteOne
         $this->defCategory = '';
         $this->defSubCategory = '';
         $this->defSubSubCategory = '';
+        $this->defModule = '';
         $this->forceType = null;
         $this->defAction = '';
         $this->isModule = '';
+        $this->moduleStrategy = 'none';
+        $this->moduleList = null;
         $this->id = null;
         $this->event = null;
         $this->idparent = null;
         $this->extra = null;
         $this->verb = 'GET';
-        $this->notAllowed=false;
+        $this->notAllowed = false;
         return $this;
     }
-
 
     /**
      * This function its used to identify the type automatically. If the url is empty then it is marked as default<br>
@@ -758,125 +935,6 @@ class RouteOne
     public function setIdentifyType($array)
     {
         $this->identify = $array;
-    }
-
-    protected function str_replace_ex($search, $replace, $subject, $limit = 99999)
-    {
-        return implode($replace, explode($search, $subject, $limit + 1));
-    }
-
-    // .htaccess:
-    // RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]
-    /**
-     *
-     *
-     * It uses the first strategy to obtain the parameters<br>
-     *  api/Controller/action/id/idparent?_event=xx&extra=xxx
-     *  ws/Controller/action/id/idparent?_event=xx&extra=xxx
-     *  Controller/action/id/idparent?_event=xx&extra=xxx
-     *  Module/Controller/action/id/idparent?_event=xx&extra=xxx
-     *  Module/api/ControllerApi/action/id/idparent/?_event=xx&extra=xxx
-     *  Module/ws/ControllerWS/action/id/idparent/?_event=xx&extra=xxx
-     * .htaccess = RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]<br>
-     */
-    public function fetch()
-    {
-        $this->notAllowed=false; // reset
-        $this->isFetched = true;
-        $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
-        unset($_GET['req']);
-        /** @noinspection HostnameSubstitutionInspection */
-        $this->httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-        $this->requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        // nginx returns a path as /aaa/bbb apache aaa/bbb
-        if ($urlFetched !== '') {
-            $urlFetched = ltrim($urlFetched, '/');
-        }
-        $this->queries = $_GET;
-        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
-        $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
-        if (is_array($this->identify) && $this->type==='') {
-            foreach ($this->identify as $ty => $path) {
-                if ($path === '') {
-                    $this->type = $ty;
-                    break;
-                }
-                if (strpos($urlFetched, $path) === 0) {
-                    $urlFetched = ltrim($this->str_replace_ex($path, '', $urlFetched, 1), '/');
-                    $this->type = $ty;
-                    break;
-                }
-            }
-        }
-        $path = explode('/', $urlFetched);
-        //$first = $path[0] ?? $this->defController;
-        $id = 0;
-        if ($this->isModule) {
-            $this->module = isset($path[$id]) ? $path[$id] : null;
-            $id++;
-        } else {
-            $this->module = null;
-        }
-        if ($this->forceType !== null) {
-            $this->type = $this->forceType;
-        }
-        if (!$this->type) {
-            $this->type = 'controller';
-            $this->setController( (!$path[$id]) ? $this->defController : $path[$id]);
-            $id++;
-        }
-        switch ($this->type) {
-            case 'ws':
-            case 'api':
-                //$id++; [fixed]
-                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
-                $id++;
-                break;
-            case 'controller':
-                $this->setController(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defController);
-                $id++;
-                break;
-            case 'front':
-                // it is processed differently.
-                $this->setCategory(isset($path[$id]) && $path[$id] ? $path[$id] : $this->defCategory);
-                $id++;
-                $this->subcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubCategory;
-                $id++;
-                $this->subsubcategory = isset($path[$id]) && $path[$id] ? $path[$id] : $this->defSubSubCategory;
-                /** @noinspection PhpUnusedLocalVariableInspection */
-                $id++;
-                $this->id = end($path); // id is the last element of the path
-                $this->event = $this->request('_event');
-                $this->extra = $this->request('_extra');
-                return;
-        }
-
-        $this->action = isset($path[$id]) ? $path[$id] : null;
-        $id++;
-        $this->action = $this->action ?: $this->defAction; // $this->action is never undefined, so we don't need isset
-        $this->id = isset($path[$id]) ? $path[$id] : null;
-        $id++;
-        $this->idparent = isset($path[$id]) ? $path[$id] : null;
-        /** @noinspection PhpUnusedLocalVariableInspection */
-        $id++;
-        $this->event = $this->request('_event');
-        $this->extra = $this->request('_extra');
-    }
-
-    private function request($id, $numeric = false, $default = null)
-    {
-        if (isset($_POST[$id])) {
-            $v = $_POST[$id];
-        } else {
-            $v = isset($_GET[$id]) ? $_GET[$id] : $default;
-        }
-        if ($numeric && is_numeric($v)) {
-            return $v;
-        }
-        if (!$numeric && ctype_alnum($v)) {
-            return $v;
-        }
-        return $default;
     }
 
     /**
@@ -918,7 +976,7 @@ class RouteOne
                 $url .= '';
                 break;
             case 'front':
-                $url .= "{$this->category}/{$this->subcategory}/{$this->subsubcategory}/";
+                $url .= "$this->category/$this->subcategory/$this->subsubcategory/";
                 if ($this->id) {
                     $url .= $this->id . '/';
                 }
@@ -1017,15 +1075,15 @@ class RouteOne
      */
     public function setController($controller)
     {
-        if(is_array($this->whitelist['controller']) ) { // there is a whitelist
-            if (in_array(strtolower($controller),$this->whitelistLower['controller'],true)) {
-                $p=array_search($controller,$this->whitelistLower['controller'],true);
-                $this->controller=$this->whitelist['controller'][$p]; // we returned the same value but with the right case.
+        if (is_array($this->whitelist['controller'])) { // there is a whitelist
+            if (in_array(strtolower($controller), $this->whitelistLower['controller'], true)) {
+                $p = array_search($controller, $this->whitelistLower['controller'], true);
+                $this->controller = $this->whitelist['controller'][$p]; // we returned the same value but with the right case.
                 return $this;
             }
             // and this value is not found there.
-            $this->controller=$this->defController;
-            $this->notAllowed=true;
+            $this->controller = $this->defController;
+            $this->notAllowed = true;
             return $this;
         }
         $this->controller = $controller;
@@ -1054,6 +1112,7 @@ class RouteOne
         $this->action = $action;
         return $this;
     }
+
 
     /**
      *
@@ -1144,33 +1203,35 @@ class RouteOne
     }
 
     /**
+     * It gets the current category
      *
-     *
-     * @return mixed
+     * @return string
      */
     public function getCategory()
     {
         return $this->category;
     }
+
     /**
+     * It sets the current category
      *
-     * @param  $category
+     * @param string $category
      *
      * @return RouteOne
      */
     public function setCategory($category)
     {
-        if(is_array($this->whitelist['category']) ) { // there is a whitelist
-            if (in_array(strtolower($category),$this->whitelistLower['category'],true)) {
-                $p=array_search($category,$this->whitelistLower['category'],true);
+        if (is_array($this->whitelist['category'])) { // there is a whitelist
+            if (in_array(strtolower($category), $this->whitelistLower['category'], true)) {
+                $p = array_search($category, $this->whitelistLower['category'], true);
 
-                $this->category=$this->whitelist['category'][$p]; // we returned the same value but with the right case.
+                $this->category = $this->whitelist['category'][$p]; // we returned the same value but with the right case.
                 return $this;
             }
             // and this value is not found there.
-            $this->category=$this->defCategory;
+            $this->category = $this->defCategory;
 
-            $this->notAllowed=true;
+            $this->notAllowed = true;
             return $this;
         }
         $this->category = $category;
@@ -1178,9 +1239,9 @@ class RouteOne
     }
 
     /**
+     * It gets the current sub category
      *
-     *
-     * @return mixed
+     * @return string
      */
     public function getSubcategory()
     {
@@ -1188,9 +1249,9 @@ class RouteOne
     }
 
     /**
+     * It get the current sub-sub-category
      *
-     *
-     * @return mixed
+     * @return string
      */
     public function getSubsubcategory()
     {
@@ -1198,6 +1259,8 @@ class RouteOne
     }
 
     /**
+     * Returns true if the current web method is POST.
+     *
      * @return bool
      */
     public function isPostBack()
@@ -1206,6 +1269,8 @@ class RouteOne
     }
 
     /**
+     * It sets if the current state is postback
+     *
      * @param bool $isPostBack
      *
      * @return RouteOne
@@ -1213,6 +1278,62 @@ class RouteOne
     public function setIsPostBack($isPostBack)
     {
         $this->isPostBack = $isPostBack;
+        return $this;
+    }
+
+    /**
+     * It gets the current list of module lists or null if there is none.
+     *
+     * @return array|bool
+     * @noinspection PhpUnused
+     */
+    public function getModuleList()
+    {
+        return $this->moduleList;
+    }
+
+    /**
+     * It sets the current list of modules or null to assigns nothing.
+     *
+     * @param array|bool $moduleList
+     * @noinspection PhpUnused
+     *
+     * @return RouteOne
+     */
+    public function setModuleList($moduleList)
+    {
+        $this->moduleList = $moduleList;
+        return $this;
+    }
+
+    /**
+     * It gets the current strategy of module.
+     *
+     * @return string=['none','modulefront','nomodulefront'][$i]
+     * @see \eftec\routeone\RouteOne::setModuleStrategy
+     */
+    public function getModuleStrategy()
+    {
+        return $this->moduleStrategy;
+    }
+
+    /**
+     * it changes the strategy to determine the type of url determined if the path has a module or not.<br>
+     * <b>$forcedType</b> must be null, otherwise this value is not used.<br>
+     * <ul>
+     * <li><b>none:</b>if the path uses a module then the <b>type</b> is calculated normally (default)</li>
+     * <li><b>modulefront:</b>if the path uses a module then the <b>type</b> is <b>front</b>. If it doesn't use a module
+     * then it is a <b>controller, api or ws</b></li>
+     * <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is <b>controller, api or ws</b>.
+     * If it doens't use module then it is <b>front</b></li>
+     * </ul>
+     * @param string $moduleStrategy
+     *
+     * @return RouteOne
+     */
+    public function setModuleStrategy($moduleStrategy)
+    {
+        $this->moduleStrategy = $moduleStrategy;
         return $this;
     }
 }

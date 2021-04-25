@@ -113,11 +113,21 @@ Now, let's say we click on some button or we do some action.  It could be captur
 
 ### **Module**
 
-Now, let's say our system is modular, and we have several customers (interna customers, external, etc.)
+Now, let's say our system is modular, and we have several customers (internal customers, external, etc.)
 
 ```php
-
 $route=new RouteOne('.',null,true); // true indicates it is modular 
+```
+
+or
+
+```php
+$route=new RouteOne('.',null,['Internal']); // or we determine the module automatically. In this case, every url that starts with Internal
+```
+
+then
+
+```php
 $route->fetch(); 
 $route->callObject('somenamespace\\%2s%\\controller\\%1sController');
 ```
@@ -139,6 +149,7 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]
+RewriteRule ^$ router.php?req=$1 [L,QSA]
 
 </IfModule>
 ```
@@ -368,7 +379,7 @@ Example: (isModule=false)
 * **Subsubcategory** = Nendoroid
 * **id** = Thanos
 
-Example: (isModule=true)
+Example: (isModule=true, or moduleList is equals to ['Retail'])
 
 > http://localhost/Retail/Toys/GoodSmileCompany/Nendoroid/Thanos
 
@@ -417,6 +428,8 @@ if ($route->getType()=='front') {
 * bool   $isModule if true then the route start reading a module name<br>
     <b>false</b> controller/action/id/idparent<br>
     <b>true</b> module/controller/action/id/idparent<br>       
+    <b>array</b> if the value is an array then the value is determined if the first part of the path is in the array.<br>
+     Example ['modulefolder1','modulefolder2']<br>
 
 ### getQuery($key,$valueIfNotFound=null)
 
@@ -652,7 +665,7 @@ var_dump($this->notAllowed); // true (whitelist error)
 // Example, value in the whitelist but with the wrong case: someweb.dom/customer/list
 $this->setWhiteList('controller',['Customer']);
 $this->fetch();
-var_dump($this-controller) // it shows "Customer" instead of "customer"
+var_dump($this->controller); // it shows "Customer" instead of "customer"
 var_dump($this->notAllowed); // false (not error with the validation of the whitelist)    
     
 // reset whitelist for controllers
@@ -679,7 +692,7 @@ it returns the current type of URL used.
 Example:
 
 ```php 
-$route=new RouteOne('.',null,false);  // null means automatic type
+$route=new RouteOne('.',null);  // null means automatic type
 $route->fetch(); 
 if($route->type==='api') {
     $route->callObject('somenamespace\\api\\%sApi');
@@ -699,12 +712,18 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2021-04-24 1.20
+   * **constructor** Now it is possible to indicates the possible modules in the constructor.
+   * Many cleanups of the code.
+   *  New field called **$moduleList** including its setter and getters (by default this value is null)
+   *  If **$moduleList** is not null then it is used to determine if the URL is a module or not
+   *  New field called **$moduleStrategy** assigned in the constructor and in the setter and getters (by default this value is 'none')
 * 2021-02-26 1.19
    * **setWhiteList()** now works with **controller** and **category**
    * **setWhiteList()** also works to define the correct proper case of the elements.
    * The method **callObjectEx()** allows to define the case. 
 * 2021-02-26 1.18
-   * new fields $verb (it gets the current verb, example GET, POST, etc.)
+   * new fields **$verb** (it gets the current verb, example GET, POST, etc.)
    * new whitelist elements:
      * $allowedVerbs The list of allowed verbs.
      * $allowedFields The list of allowed fields used by **callObjectEx()**

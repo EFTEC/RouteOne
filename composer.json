@@ -1,7 +1,6 @@
 {
   "name": "eftec/routeone",
   "description": "Router service class for PHP",
-  "version": "1.19",
   "type": "library",
   "keywords": [
     "php",
