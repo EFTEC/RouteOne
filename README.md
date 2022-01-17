@@ -1,15 +1,15 @@
 # RouteOne
-It reads the URL route and parses the values of path, so it could be interpreted manually or automatically in the fastest way possible (for example, to implement a MVC system).  
+It reads the URL route and parses the values of path, so it could be interpreted manually or automatically in the fastest way possible (for example, to implement an MVC system).  
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
-[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
 [![php](https://img.shields.io/badge/php-%3E5.6-green.svg)]()
 [![coverage](https://img.shields.io/badge/coverage-80%25-green)]()
 [![compatible](https://img.shields.io/badge/compatible-linux%7Cwindows%7Cmacos-green)]()
 
-Unlikely other libraries, this library does not have dependencies and it is contained in a single class, so it is compatible with any PHP project, for example Wordpress, Laravel, Drupal, a custom PHP project, etc.
+Unlikely other libraries, this library does not have dependencies, and it is contained in a single class, so it is compatible with any PHP project, for example WordPress, Laravel, Drupal, a custom PHP project, etc.
 
 This library is based in **CoC Convention over Configuration**. It reduces the boilerplate but it has fixed  functionalities.  This library does not allow to use custom "routes" but it covers practically all cases, so it increases the performance and usability while it sacrifices flexibility.
 
@@ -38,7 +38,8 @@ echo $route->action; // Update
 echo $route->id; // 2
     
 // It could also calls a method of a class automatically
-$this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from the class cocacola\controller\CustomerController
+$this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from 
+                                                                   // the class cocacola\controller\CustomerController
 
 // it is our class
 class CustomerController {
@@ -471,7 +472,7 @@ Call a method inside an object using the current route.
      * The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
      * Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
      * Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
-* **throwOnError** if true and it fails then it throws an error. If false then it only returns the error message.
+* **throwOnError** if true, and it fails then it throws an error. If false then it only returns the error message.
 
 The name of the method is obtained via the current **action**
 

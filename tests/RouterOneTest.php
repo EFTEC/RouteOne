@@ -9,7 +9,8 @@ use Exception;
 use PHPUnit\Framework\TestCase;
 class categoRYController {
     /** @noinspection PhpUnused */
-    public function actiontestAction($id, $idparent='', $event='') {
+    public function actiontestAction($id, $idparent='', $event=''): void
+    {
         echo 'action test called';
     }
 }
@@ -27,9 +28,10 @@ class RouterOneTest extends TestCase
 
     public function setUp()
     {
-        
+
     }
-    public function testNaked() {
+    public function testNaked(): void
+    {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->fetch();
@@ -44,11 +46,13 @@ class RouterOneTest extends TestCase
         $url=$this->ro->alwaysNakedDomain(true,false);
         self::assertEquals('https://example.dom',$url);
     }
-    public function testMisc1() {
+    public function testMisc1(): void
+    {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_SERVER['REQUEST_METHOD']='POST';
         $_GET['req']='module1/controller1/action1'; // bbb is for api (but we are forcing it the definition of it.
         $this->ro=new RouteOne('http://www.example.dom','api',['module1'],true);
+
         self::assertEquals(true,$this->ro->isPostBack());
         self::assertEquals('module1',$this->ro->module);
         self::assertEquals('controller1',$this->ro->controller);
@@ -56,7 +60,8 @@ class RouterOneTest extends TestCase
         self::assertEquals('POST',$this->ro->verb);
         unset($_SERVER['REQUEST_METHOD']);
     }
-    public function testMisc2() {
+    public function testMisc2(): void
+    {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_SERVER['REQUEST_METHOD']='PUT';
         $_GET['req']='module1/controller1/action1'; // bbb is for api (but we are forcing it the definition of it.
@@ -68,7 +73,8 @@ class RouterOneTest extends TestCase
         self::assertEquals('PUT',$this->ro->verb);
         unset($_SERVER['REQUEST_METHOD']);
     }
-    public function testAPIWS() {
+    public function testAPIWS(): void
+    {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_SERVER['REQUEST_METHOD']='POST';
         $_GET['_event']='event1';
@@ -95,7 +101,8 @@ class RouterOneTest extends TestCase
         self::assertEquals('parent1',$this->ro->idparent);
         unset($_SERVER['REQUEST_METHOD']);
     }
-    public function testwww() {
+    public function testwww(): void
+    {
         $_SERVER['HTTP_HOST']='example.dom';
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->fetch();
@@ -128,7 +135,7 @@ class RouterOneTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testNewVar()
+    public function testNewVar(): void
     {
         $this->ro=new RouteOne('http://www.example.dom');
         $_GET['req']='MyController/Action2/id/parentid';
@@ -141,17 +148,18 @@ class RouterOneTest extends TestCase
         self::assertEquals('parentid', $this->ro->getIdparent());
         self::assertEquals('MyController', $this->ro->getController());
         $this->ro->callFile(__DIR__ .'/%s.php');
-        
+
         self::assertEquals('http://www.example.dom/dummy.php',$this->ro->getNonRouteUrl('dummy.php'));
-        
+
         //$this->ro->callObject();
     }
 
     /**
      * @throws Exception
      */
-    public function testCall() {
-        
+    public function testCall(): void
+    {
+
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';
@@ -176,7 +184,8 @@ class RouterOneTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testCallNotAllowed() {
+    public function testCallNotAllowed(): void
+    {
 
         // it must not fail
         $this->ro=new RouteOne('http://www.example.dom');
@@ -230,7 +239,8 @@ class RouterOneTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testCallNotAllowedCategory() {
+    public function testCallNotAllowedCategory(): void
+    {
 
         // it must not fail
         $this->ro=new RouteOne('http://www.example.dom');
@@ -283,7 +293,8 @@ class RouterOneTest extends TestCase
 
     }
 
-    public function testCallFail() {
+    public function testCallFail(): void
+    {
 
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
@@ -294,7 +305,7 @@ class RouterOneTest extends TestCase
 
 
     }
-    public function testNoFront()
+    public function testNoFront(): void
     {
         $_GET['req']='Module/MyController/Action2/id/parentid';
         $_GET['_event']='Event';
@@ -352,7 +363,7 @@ class RouterOneTest extends TestCase
         self::assertEquals('http://www.example.dom/Module/MyController/Action2/id/',$this->ro->getUrl('',false));
     }
 
-    public function testNewVar2()
+    public function testNewVar2(): void
     {
         $_GET['req']='Module/MyController/Action2/id/parentid';
         $_GET['_event']='Event';
@@ -377,12 +388,12 @@ class RouterOneTest extends TestCase
         self::assertInstanceOf(RouteOne::class,$this->ro->setIdParent(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setExtra(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setIsPostBack(false));
-        
+
         self::assertEquals('http://www.example.dom/Module////',$this->ro->getUrl('',false));
- 
+
         //$this->ro->callObject();
     }
-    public function testNewVar3()
+    public function testNewVar3(): void
     {
 
         $_GET['req']='category/subc/subsubc/id';
@@ -410,7 +421,8 @@ class RouterOneTest extends TestCase
 
         //$this->ro->callObject();
     }
-    public function testDefault() {
+    public function testDefault(): void
+    {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_GET['req']='';
         $this->ro=new RouteOne('http://www.example.dom');
@@ -451,7 +463,7 @@ class RouterOneTest extends TestCase
     }
 
 
-    public function testNewVar3b()
+    public function testNewVar3b(): void
     {
 
         $_GET['req']='front/category/subc/subsubc/id';
@@ -482,7 +494,7 @@ class RouterOneTest extends TestCase
     }
 
 
-    public function testNewVar4()
+    public function testNewVar4(): void
     {
 
         $_GET['req']='module/category/subc/subsubc/id';
@@ -508,7 +520,7 @@ class RouterOneTest extends TestCase
         self::assertEquals('123', $this->ro->getQuery('id', 'def'));
     }
 
-    public function testNewVar5()
+    public function testNewVar5(): void
     {
         $this->ro=new RouteOne('http://www.example.dom','front');
         $this->ro->urlFront('mod','cat','subc','subsubc',20);

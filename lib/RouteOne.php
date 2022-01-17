@@ -40,7 +40,7 @@ class RouteOne
     public $event;
     /** @var string. It is the current parent id (if any) */
     public $idparent;
-    /** @var string. It's the event (such as "click on button). */
+    /** @var string. It's the event (such as "click on button"). */
     public $extra;
     /** @var string The current category. It is useful for the type 'front' */
     public $category;
@@ -50,9 +50,9 @@ class RouteOne
     public $subsubcategory;
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
     public $serverName;
-    /** @var boolean its true if the page is POST, otherwise (GET,DELETE or PUT) it is false. */
+    /** @var boolean it's true if the page is POST, otherwise (GET,DELETE or PUT) it is false. */
     public $isPostBack = false;
-    /** @var string The current HTML METHOD. It is always uppercase and only inside of the array $allowedVerbs */
+    /** @var string The current HTML METHOD. It is always uppercase and only inside the array $allowedVerbs */
     public $verb = 'GET';
     /** @var string[] The list of allowed $verb. In case of error, the $verb is equals to GET */
     public $allowedVerbs = ['GET', 'POST', 'PUT', 'DELETE'];
@@ -61,6 +61,10 @@ class RouteOne
         , 'subcategory', 'subsubcategory'];
     /** @var bool if true then the whitelist validation failed and the value is not allowed */
     public $notAllowed = false;
+    public $lastError = [];
+    /** @var string|null it stores the current path calculated by */
+    public $currentPath;
+    public $path = [];
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
     public $httpHost = '';
@@ -188,7 +192,7 @@ class RouteOne
      * @return $this
      */
     public function setDefaultValues($defController = '', $defAction = '', $defCategory = ''
-        , $defSubCategory = '', $defSubSubCategory = '', $defModule = '')
+        ,                            $defSubCategory = '', $defSubSubCategory = '', $defModule = '')
     {
         if ($this->isFetched) {
             throw new RuntimeException("RouteOne: you can't call setDefaultValues() after fetch()");
@@ -200,6 +204,119 @@ class RouteOne
         $this->defSubSubCategory = $defSubSubCategory;
         $this->defModule = $defModule;
         return $this;
+    }
+
+    public function clearPath() {
+        $this->path=[];
+    }
+    public function addPath($path,$name=null)
+    {
+        if($name===null) {
+            $this->path[] = $path;
+        } else {
+            $this->path[$name] = $path;
+        }
+    }
+
+    /**
+     * @return int|string|null return false if not path is evaluated,<br>
+     *                     otherwise it returns the number/name of the path
+     */
+    public function fetchPath()
+    {
+        $this->lastError = [];
+        $this->currentPath=null;
+        $urlFetchedOriginal = $this->getUrlFetchedOriginal();
+        $this->queries = $_GET;
+        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
+        foreach ($this->path as $pnum => $pattern) {
+
+            $bigs = explode('?', $pattern, 2); // aaa/bbb/{ccc}?dd=2  [/aaa/bbb/{ccc},dd=2]
+            $p0 = $bigs[0]; // aaa/bbb/{ccc}
+            $posBase = strpos($p0, '{');
+            if ($posBase === false) {
+                // path does not contain { }
+                $base=$p0; // aaa/bbb/ccc
+                $p0b='';
+
+            } else {
+                $base = $posBase === 0 ? '' : substr($p0, 0, $posBase - 1); // aaa/bbb/
+                $p0b = substr($p0, $posBase); // {ccc}
+            }
+            if ($base !== '' && strpos($urlFetchedOriginal, $base) !== 0) {
+                // base url does not match.
+                $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
+                continue;
+            }
+            $urlFetched = substr($urlFetchedOriginal, strlen($base));
+            // nginx returns a path as /aaa/bbb apache aaa/bbb
+            if ($urlFetched !== '') {
+                $urlFetched = ltrim($urlFetched, '/');
+            }
+            $path = $this->getExtracted($urlFetched);
+            $partTmps = ($p0b!=='') ? explode('/', $p0b) : [];
+            if (count($path) > count($partTmps)) {
+                $this->lastError[$pnum] = "Pattern [$pnum] is too big to the current url";
+                continue;
+            }
+            foreach ($partTmps as $key => $v) {
+                $p = trim($v, '{}' . " \t\n\r\0\x0B");
+                $tmp = explode(':', $p, 2); // we separate by fieldname:default value
+                if (count($tmp) < 2) {
+                    if (!array_key_exists($key, $path) || !isset($path[$key])) {
+                        // the field is required but there we don't find any value
+                        $this->lastError[$pnum] = "Pattern [$pnum] required field ($v) not found in url";
+                        continue;
+                    }
+                    $name = $p;
+                    $value = $path[$key];
+                } else {
+                    $name = $tmp[0];
+                    if (isset($path[$key]) && $path[$key]) {
+                        $value = $path[$key];
+                    } else {
+                        // value not found, set default value
+                        $value = $tmp[1];
+                    }
+                }
+                // 'controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
+                //        , 'subcategory', 'subsubcategory'
+                switch ($name) {
+                    case 'controller':
+                        $this->controller =preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        break;
+                    case 'action':
+                        $this->action = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        break;
+                    case 'module':
+                        $this->module = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        break;
+                    case 'id':
+                        $this->id = $value;
+                        break;
+                    case 'idparent':
+                        $this->idparent = $value;
+                        break;
+                    case 'category':
+                        $this->category = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        break;
+                    case 'subcategory':
+                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        break;
+                    case 'subsubcategory':
+                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        break;
+                    default:
+                        throw new RuntimeException('pattern incorrecto [$name:$value]');
+                }
+            }
+            $this->event = $this->request('_event');
+            $this->extra = $this->request('_extra');
+            $this->currentPath=$pnum;
+            break;
+        }
+
+        return $this->currentPath;
     }
 
     /**
@@ -221,34 +338,21 @@ class RouteOne
      */
     public function fetch()
     {
-        $this->notAllowed = false; // reset
+        //$urlFetched = $_GET['req'] ?? null; // controller/action/id/..
+        $urlFetched = $this->getUrlFetchedOriginal(); // // controller/action/id/..
         $this->isFetched = true;
-        $urlFetched = isset($_GET['req']) ? $_GET['req'] : null; // controller/action/id/..
+
         unset($_GET['req']);
         /** @noinspection HostnameSubstitutionInspection */
-        $this->httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-        $this->requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        $this->httpHost = $_SERVER['HTTP_HOST'] ?? '';
+        $this->requestUri = $_SERVER['REQUEST_URI'] ?? '';
         // nginx returns a path as /aaa/bbb apache aaa/bbb
         if ($urlFetched !== '') {
             $urlFetched = ltrim($urlFetched, '/');
         }
         $this->queries = $_GET;
         unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
-        $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
-        if (is_array($this->identify) && $this->type === '') {
-            foreach ($this->identify as $ty => $path) {
-                if ($path === '') {
-                    $this->type = $ty;
-                    break;
-                }
-                if (strpos($urlFetched, $path) === 0) {
-                    $urlFetched = ltrim($this->str_replace_ex($path, '', $urlFetched, 1), '/');
-                    $this->type = $ty;
-                    break;
-                }
-            }
-        }
-        $path = explode('/', $urlFetched);
+        $path = $this->getExtracted($urlFetched,true);
         //$first = $path[0] ?? $this->defController;
         if (isset($path[0]) && $this->moduleList !== null) {
             // if moduleArray has values then we find if the current path is a module or not.
@@ -256,7 +360,7 @@ class RouteOne
         }
         $id = 0;
         if ($this->isModule) {
-            $this->module = isset($path[$id]) ? $path[$id] : $this->defModule;
+            $this->module = $path[$id] ?? $this->defModule;
             $id++;
             if ($this->moduleStrategy === 'modulefront') {
                 // the path is not a module, then type is set as front.
@@ -303,12 +407,12 @@ class RouteOne
                 return;
         }
 
-        $this->action = isset($path[$id]) ? $path[$id] : null;
+        $this->action = $path[$id] ?? null;
         $id++;
         $this->action = $this->action ?: $this->defAction; // $this->action is never undefined, so we don't need isset
-        $this->id = isset($path[$id]) ? $path[$id] : null;
+        $this->id = $path[$id] ?? null;
         $id++;
-        $this->idparent = isset($path[$id]) ? $path[$id] : null;
+        $this->idparent = $path[$id] ?? null;
         /** @noinspection PhpUnusedLocalVariableInspection */
         $id++;
         $this->event = $this->request('_event');
@@ -322,17 +426,12 @@ class RouteOne
 
     private function request($id)
     {
-        if (isset($_POST[$id])) {
-            $v = $_POST[$id];
-        } else {
-            $v = isset($_GET[$id]) ? $_GET[$id] : null;
-        }
-        return $v;
+        return $_POST[$id] ?? $_GET[$id] ?? null;
     }
 
     /**
      * It is an associative array with the allowed paths or null (default behaviour) to allows any path.<br>
-     * The comparison ignores cases but the usage is case sensitive and it uses the case used here<br>
+     * The comparison ignores cases but the usage is "case-sensitive" and it uses the case used here<br>
      * For example: if we allowed the controller called "Controller1" then:<br>
      * <ul>
      * <li>somedomain.dom/Controller1 is accepted</li>
@@ -358,13 +457,13 @@ class RouteOne
     }
 
     /**
-     * If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
+     * If the subdomain is empty or different to www, then it redirects to www.domain.com.<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
      * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
      * it must be called at the top of the code</b>
      *
-     * @param bool $https    If true the it also redirect to https
-     * @param bool $redirect if true (default) then it redirect the header. If false, then it returns the new full url
+     * @param bool $https    If true then it also redirects to https
+     * @param bool $redirect if true (default) then it redirects the header. If false, then it returns the new full url
      * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the full url to redirect.
      */
@@ -392,13 +491,13 @@ class RouteOne
     private function getLocation($https)
     {
         if ($https) {
-            $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : '443';
+            $port = $_SERVER['HTTP_PORT'] ?? '443';
             $location = 'https:';
             if ($port !== '443' && $port !== '80') {
                 $location .= $port;
             }
         } else {
-            $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : '80';
+            $port = $_SERVER['HTTP_PORT'] ?? '80';
             $location = 'http:';
             if ($port !== '80') {
                 $location .= $port;
@@ -412,7 +511,7 @@ class RouteOne
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
      * <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
      * it must be called at the top of the code</b>
-     * @param bool $redirect if true (default) then it redirect the header. If false, then it returns the new url
+     * @param bool $redirect if true (default) then it redirects the header. If false, then it returns the new url
      * @return string|null It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the url to redirect.
      */
@@ -421,9 +520,9 @@ class RouteOne
         if (strpos($this->httpHost, '.') === false || ip2long($this->httpHost)) {
             return null;
         }
-        $https = isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : '';
+        $https = $_SERVER['HTTPS'] ?? '';
         if (empty($https) || $https === 'off') {
-            $port = isset($_SERVER['HTTP_PORT']) ? $_SERVER['HTTP_PORT'] : '443';
+            $port = $_SERVER['HTTP_PORT'] ?? '443';
             $port = ($port === '443' || $port === '80') ? '' : $port;
             $location = 'https:' . $port . '//' . $this->httpHost . $this->requestUri;
             if ($redirect) {
@@ -437,13 +536,13 @@ class RouteOne
     }
 
     /**
-     * If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>
+     * If the subdomain is www (example www.domain.dom) then it redirects to a naked domain "domain.dom"<br>
      * <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-     * <b>Note: If this code needs to redirect, then we should stop stops the execution of any other code. Usually,
+     * <b>Note: If this code needs to redirect, then we should stop the execution of any other code. Usually,
      * it must be called at the top of the code</b>
      *
-     * @param bool $https    If true the it also redirect to https
-     * @param bool $redirect if true (default) then it redirect the header. If false, then it returns the new url
+     * @param bool $https    If true then it also redirects to https
+     * @param bool $redirect if true (default) then it redirects the header. If false, then it returns the new url
      * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the full url to redirect.
      */
@@ -493,7 +592,7 @@ class RouteOne
      * @param bool   $throwOnError   [optional] Default:true,  if true then it throws an exception. If false then it
      *                               returns the error (if any)
      * @param string $method         [optional] Default value='%sAction'. The name of the method to call (get/post).
-     *                               If method does not exists then it will use $methodGet or $methodPost
+     *                               If method does not exist then it will use $methodGet or $methodPost
      * @param string $methodGet      [optional] Default value='%sAction'. The name of the method to call (get) but only
      *                               if the method defined by $method is not defined.
      * @param string $methodPost     [optional] Default value='%sAction'. The name of the method to call (post) but
@@ -506,7 +605,7 @@ class RouteOne
      * @throws Exception
      */
     public function callObject(
-        $classStructure = '%sController', $throwOnError = true
+          $classStructure = '%sController', $throwOnError = true
         , $method = '%sAction', $methodGet = '%sActionGet', $methodPost = '%sActionPost'
         , $arguments = ['id', 'idparent', 'event']
     )
@@ -637,7 +736,7 @@ class RouteOne
      * @throws Exception
      */
     public function callObjectEx(
-        $classStructure = '{controller}Controller', $throwOnError = true
+          $classStructure = '{controller}Controller', $throwOnError = true
         , $method = '{action}Action', $methodGet = '{action}Action{verb}'
         , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
     )
@@ -703,7 +802,7 @@ class RouteOne
     /**
      * Return a formatted string like vsprintf() with named placeholders.<br>
      * When a placeholder doesn't have a matching key (it's not in the whitelist <b>$allowedFields</b>), then the value
-     * is not modified and it is returned as is.<br>
+     * is not modified, and it is returned as is.<br>
      * If the name starts with uc_,lc_,u_,l_ then it is converted into ucfirst,lcfirst,uppercase or lowercase.
      *
      * @param string $format
@@ -759,9 +858,6 @@ class RouteOne
     {
         $op = sprintf($fileStructure, $this->controller, $this->module, $this->type);
         try {
-            /**
-             * @noinspection PhpIncludeInspection
-             */
             include $op;
         } catch (Exception $ex) {
             if ($throwOnError) {
@@ -783,7 +879,7 @@ class RouteOne
      */
     public function getCurrentUrl($withoutFilename = true)
     {
-        $sn = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+        $sn = $_SERVER['SCRIPT_NAME'] ?? '';
         if ($withoutFilename) {
             return dirname($this->getCurrentServer() . $sn);
         }
@@ -799,14 +895,10 @@ class RouteOne
      */
     public function getCurrentServer()
     {
-        if (isset($this->serverName)) {
-            $server_name = $this->serverName;
-        } else {
-            $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : null;
-        }
-        $sp = isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : '';
-        $port = !in_array($sp, ['80', '443'], true) ? ':' . $sp . '' : '';
-        $https = isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : '';
+        $server_name = $this->serverName ?? $_SERVER['SERVER_NAME'] ?? null;
+        $sp = $_SERVER['SERVER_PORT'] ?? 80;
+        $port = !in_array($sp, ['80', '443'], true) ? ':' . $sp : '';
+        $https = $_SERVER['HTTPS'] ?? '';
         $scheme = !empty($https) && (strtolower($https) === 'on' || $https === '1') ? 'https' : 'http';
         return $scheme . '://' . $server_name . $port;
     }
@@ -915,11 +1007,13 @@ class RouteOne
         $this->extra = null;
         $this->verb = 'GET';
         $this->notAllowed = false;
+        $this->clearPath();
+        $this->currentPath=null;
         return $this;
     }
 
     /**
-     * This function its used to identify the type automatically. If the url is empty then it is marked as default<br>
+     * This function is used to identify the type automatically. If the url is empty then it is marked as default<br>
      * It returns the first one that matches.
      * <b>Example:</b><br>
      * <pre>
@@ -954,8 +1048,8 @@ class RouteOne
     }
 
     /**
-     * It reconstruct an url using the current information.<br>
-     * <b>Note:<b>. It discards any information outside of the type
+     * It reconstructsan url using the current information.<br>
+     * <b>Note:<b>. It discards any information outside the type
      * (/controller/action/id/idparent/<cutcontent>?arg=1&arg=2)
      *
      * @param string $extraQuery   If we want to add extra queries
@@ -1044,7 +1138,36 @@ class RouteOne
      */
     public function getQuery($key, $valueIfNotFound = null)
     {
-        return isset($this->queries[$key]) ? $this->queries[$key] : $valueIfNotFound;
+        return $this->queries[$key] ?? $valueIfNotFound;
+    }
+
+    /**
+     * It gets the current header (if any)
+     *
+     * @param string     $key
+     * @param null|mixed $valueIfNotFound
+     * @return mixed|null
+     */
+    public function getHeader($key, $valueIfNotFound = null)
+    {
+        $keyname = 'HTTP_' . $key;
+        return $_SERVER[$keyname] ?? $valueIfNotFound;
+    }
+
+    /**
+     * It gets the body of a request.
+     *
+     * @param bool $jsonDeserialize
+     * @param bool $asAssociative
+     * @return false|mixed|string
+     */
+    public function getBody($jsonDeserialize = false, $asAssociative = true)
+    {
+        $entityBody = file_get_contents('php://input');
+        if (!$jsonDeserialize) {
+            return $entityBody;
+        }
+        return json_decode($entityBody, $asAssociative);
     }
 
     /**
@@ -1250,7 +1373,7 @@ class RouteOne
     }
 
     /**
-     * It get the current sub-sub-category
+     * It gets the current sub-sub-category
      *
      * @return string
      */
@@ -1336,5 +1459,46 @@ class RouteOne
     {
         $this->moduleStrategy = $moduleStrategy;
         return $this;
+    }
+
+    /**
+     * @return mixed|null
+     */
+    private function getUrlFetchedOriginal()
+    {
+        $this->notAllowed = false; // reset
+        $this->isFetched = true;
+        $urlFetchedOriginal = $_GET['req'] ?? null; // controller/action/id/..
+        unset($_GET['req']);
+        /** @noinspection HostnameSubstitutionInspection */
+        $this->httpHost = isset($_SERVER['HTTP_HOST']) ? filter_var($_SERVER['HTTP_HOST'], FILTER_SANITIZE_URL) : '';
+        $this->requestUri = isset($_SERVER['REQUEST_URI']) ? filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL) : '';
+        return $urlFetchedOriginal;
+    }
+
+    /**
+     * @param string $urlFetched
+     * @param bool   $sanitize
+     * @return array
+     */
+    private function getExtracted($urlFetched,$sanitize=false): array
+    {
+        if($sanitize) {
+            $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
+        }
+        if (is_array($this->identify) && $this->type === '') {
+            foreach ($this->identify as $ty => $path) {
+                if ($path === '') {
+                    $this->type = $ty;
+                    break;
+                }
+                if (strpos($urlFetched, $path) === 0) {
+                    $urlFetched = ltrim($this->str_replace_ex($path, '', $urlFetched, 1), '/');
+                    $this->type = $ty;
+                    break;
+                }
+            }
+        }
+        return explode('/', $urlFetched);
     }
 }
