@@ -19,7 +19,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.21 2022-01-27
+ * @version   1.22 2022-01-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
