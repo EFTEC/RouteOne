@@ -39,7 +39,7 @@ echo $route->id; // 2
     
 // It could also calls a method of a class automatically
 $this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from 
-                                                                   // the class cocacola\controller\CustomerController
+                                                  // the class cocacola\controller\CustomerController
 
 // it is our class
 class CustomerController {
@@ -47,7 +47,16 @@ class CustomerController {
         // calling the method
     }
 }
-    
+```
+
+Example using path (since 1.20)
+
+```php
+$route=new RouteOne('http://www.example.dom');
+$route->addPath('api/{controller}/{action}/{id}'); // any rout
+$route->addPath('{controller}/{id}/{idparent}');
+$route->fetchPath();
+$this->callObjectEx('cocacola\controller\{controller}Controller');
 ```
 
 
@@ -254,6 +263,14 @@ $route->fetch(); // fetch all the input values (from the route, get, post and su
 $route->callObject('somenamespace\\controller\\%sController'); // where it will call the  class \somenamespace\controller\CustomerController  
 ```
 
+> Note:
+>
+> If you want to use an argument different than "req", then you can change it using the next code:
+>
+> $route->argumentName='newargument';
+
+
+
 ## Routes
 
 ### API route
@@ -339,6 +356,11 @@ file CustomerController.php:
 ```php 
 namespace somenamespace\controller;
 class CustomerController {
+    
+    // optional:
+    public function __construct($argument) {
+        
+    }
     // any action GET or POST
     public function GetAction($id="",$idparent="",$event="") {
         // **my code goes here.**
@@ -458,11 +480,17 @@ $id=$router->getQuery("id"); // hi
 ```
 
 
-### fetch()
+### fetch
+
+Sintax:
+> fetch()
 
 Fetch the values from the route, and the values are processed.
 
-### callObject($classStructure='%sController',$throwOnError=true)
+### callObject
+
+Sintax:
+> callObject($classStructure='%sController',$throwOnError=true)
 
 Call a method inside an object using the current route.
 
@@ -480,9 +508,12 @@ The name of the method is obtained via the current **action**
 2) Otherwise, if $istpostback=false then it calls the method **{nameaction}ActionGet**
 3) Otherwise, if $istpostback=true then it calls the method **{nameaction}ActionPost**
 
-### callObjectEx($classStructure, $throwOnError, $method, $methodGet, $methodPost,$arguments
+### callObjectEx
 
-It creates an new instance of an object (for example, a Controller object) and calls the method.<br>
+Sintax
+> callObjectEx($classStructure, $throwOnError, $method, $methodGet, $methodPost,$arguments,$injectArguments)
+
+It creates a new instance of an object (for example, a Controller object) and calls the method.<br>
 Note: It is an advanced version of this::callObject()<br>
 This method uses {} to replace values based in the next variables:<br>
 
@@ -499,7 +530,6 @@ This method uses {} to replace values based in the next variables:<br>
 | {subcategory}    | The current subcategory                            |
 | {subsubcategory} | The current subsubcategory                         |
 
-
 <b>Example:</b> 
 
 ```php
@@ -510,14 +540,84 @@ $this->callObjectEx('cocacola\controller\{controller}Controller');
 // front example: http://somedomain/product/coffee/nescafe/1
 $this->callObjectEx('cocacola\controller\{category}Controller' // the class to call
         ,false // if error then it throw an error
-        ,'{subcategory}' // the method to call (get or post)
+        ,'{subcategory}' // the method to call (get, post or any other method)
         ,null // the method to call (method get)
         ,null // the method to call (method post)
-        ,['subsubcategory','id']); // the arguments to call the method
+        ,['subsubcategory','id'] // the arguments to call the method
+        ,['arg1','arg2']); // arguments that will be passed to the constructor of the instance 
 // it calls the method cocacola\controller\product::coffee('nescafe','1');
 ```
 
 Call a method inside an object using the current route.
+
+**Example:**
+
+Router:
+
+```php
+$databaseService=new SomeDatabaseService();
+$route=new RouteOne();
+
+$route->callObjectEx('cocacola\controller\{controller}Controller' // the class to call
+        ,false // if error then it throw an error
+        ,'{action}Action' // the method to call (get, post or any other method)
+        ,'{action}Action{verb}' // the method to call (method get)
+        ,'{action}Action{verb}' // the method to call (method post)
+        ,['id', 'idparent', 'event'] // the arguments to call the method
+        ,[$databaseService,$route]); // (optional)arguments that will be passed to the constructor of the instance 
+
+```
+
+Controller:    
+
+```php
+namespace cocacola\controller;
+class CustomerController {
+	protected $databaseService;
+    protected $route;
+    public function __construct($databaseService,$route) {
+        // optional: injecting services
+		$this->databaseService=$databaseService;
+		$this->route=$route;        
+    }
+    // any action GET or POST
+    public function GreenAction($id="",$idparent="",$event="") {
+    }
+    // GET only action (optional)
+    public function BlueActionGET($id="",$idparent="",$event="") {
+        // **my code goes here.**
+    }    
+    // POST only action (optional)
+    public function YellowActionPOST($id="",$idparent="",$event="") {
+        // **my code goes here.**
+    }    
+    // GET only action (optional)
+    public function RedActionGET($id="",$idparent="",$event="") {
+        // **my code goes here.**
+    }      
+    // any action GET or POST
+    public function RedAction($id="",$idparent="",$event="") {
+        // **my code goes here.**
+    }      
+    
+}
+```
+Results:
+
+| url                                                      | method called                                     |
+| -------------------------------------------------------- | ------------------------------------------------- |
+| http://localhost/Customer/Green (GET)                    | GreenAction                                       |
+| http://localhost/Customer/Green/20/30?_event=click (GET) | GreenAction($id=20, $idparent=30, $event='click') |
+| http://localhost/Customer/Green (POST)                   | GreenAction                                       |
+| http://localhost/Customer/Blue (GET)                     | BlueActionGET                                     |
+| http://localhost/Customer/Blue (POST)                    | ERROR                                             |
+| http://localhost/Customer/Yellow (GET)                   | ERROR                                             |
+| http://localhost/Customer/Yellow (POST)                  | YellowActionPOST                                  |
+| http://localhost/Customer/Red (GET)                      | RedActionGET (It has priority over RedAction)     |
+| http://localhost/Customer/Red (POST)                     | RedAction                                         |
+| http://localhost/Customer/Orange                         | ERROR                                             |
+
+
 
 ### callFile($fileStructure='%s.php',$throwOnError=true)
 
@@ -525,6 +625,39 @@ It calls (include) a php file using the current name of the controller
 
 * **$fileStructure** The current name of the controller. "%s" is the name of the current controller. Example :/Customer/Insert -> calls the file Customer.php
 * **throwOnError** if true then it throws an error. If false then it only returns the error message.
+
+### getHeader()
+
+Syntax:
+
+> getHeader($key, $valueIfNotFound = null)
+
+It gets the current header (if any). If the value is not found, then it returns $valueIfNotFound. Note, the $key is always converted to uppercase.
+
+Example:
+
+```php
+$token=$this->getHeader('token','TOKEN NOT FOUND');
+```
+
+### getBody()
+
+Syntax:
+
+>  getBody($jsonDeserialize = false, $asAssociative = true)
+
+It gets the body of a request.
+
+Example:
+
+```php
+$body=$this->getBody(); // '{"id"=>1,"name"=>john}' (as string)
+$body=$this->getBody(true); // stdClass {id=>1,name=>john}
+$body=$this->getBody(true,true); // ["id"=>1,"name"=>john]
+```
+
+### 
+
 
 
 ### getCurrentUrl($withoutFilename = true)
@@ -619,10 +752,71 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 
 ```
 
+## Using Paths
+
+Since 1.21, it is possible to use a custom path instead of a pre-defined path.
+
+### clearPath()
+
+Syntax:
+
+>clearPath()
+
+It clears all the paths defined
+
+### addPath()
+
+Syntax:
+
+> addPath($path, $name = null)
+
+It adds a new path.
+
+The path could start with a static location but the rest of the path must be defined by variables (enclosed by {}) and separated by "/".
+
+You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}
+
+Example:
+
+```php
+$this->addPath('{controller}/{id}/{idparent}');
+$this->addPath('myapi/otherfolder/{controller}/{id}/{idparent}');
+$this->addPath('{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2}');
+
+// url: /dummy/10/20 =>(controller: dummy, id=10, idparent=20)
+// url: /myapi/otherfolder/dummy/10/20  =>(controller: dummy, id=10, idparent=20)
+```
+
+You can define different paths, however it only uses the first path that matches some URL.
+
+### fetchPath()
+
+Syntax:
+
+> fetchPath()
+
+It fetches the path previously defined by addPath.
+
+Example:
+
+```php
+$route=new RouteOne('http://www.example.dom');
+$route->addPath('{controller}/{id}/{idparent}');
+$route->fetchPath();
+// url: http://www.example.dom/customer/1/200
+echo $route->controller; // customer
+echo $route->id; // 1
+echo $route->idparent; // 200
+
+```
+
+
+
 ## fields
 
 | Field           | Description                                                  | Example                                                      |
 | --------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| $argumentName   | The name of the argument used by Apache .Htaccess and nginx  | $this-argumentName='req';                                    |
 | $base           | It is the base url.                                          | $this->base=0;                                               |
 | $type           | It is the type of url (api,ws,controller or front)           | echo $this->type; // api                                     |
 | $module         | It's the current module                                      | echo $this->module;                                          |
@@ -636,8 +830,8 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 | $subcategory    | The current sub-category. It is useful for the type 'front'  | echo $this->subcategory;                                     |
 | $subsubcategory | The current sub-sub-category. It is useful for the type  'front' | echo $this->subsubcategory;                                  |
 | $identify       | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
-| $isPostBack     | its true if the page is POST, otherwise false.                                | if ($this->isPostBack) { ... };                             |
-| $verb           | The current verb, it could be GET,POST,PUT and DELETE.       | if ($this->verb) { ... };                             |
+| $isPostBack     | its true if the page is POST, otherwise false.               | if ($this->isPostBack) { ... };                              |
+| $verb           | The current verb, it could be GET,POST,PUT and DELETE.       | if ($this->verb) { ... };                                    |
 
 ## Whitelist
 
@@ -713,6 +907,13 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2022-01-27 1.21
+  * [new] callObjectEx allows adding arguments to the constructor.
+  * [new] clearPath()
+  * [new] addPath()
+  * [new] fetchPath()
+  * [new] getHeader()
+  * [new] getBody()
 * 2021-04-24 1.20
    * **constructor** Now it is possible to indicates the possible modules in the constructor.
    * Many cleanups of the code.

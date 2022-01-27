@@ -19,11 +19,13 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.20 2021-04-24
+ * @version   1.21 2022-01-27
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
+    /** @var string The name of the argument used by apache and nginx (by default it is req) */
+    public $argumentName='req';
     /** @var string It is the base url.<br> */
     public $base = '';
     /** @var string=['api','ws','controller','front'][$i] It is the type url. */
@@ -206,12 +208,19 @@ class RouteOne
         return $this;
     }
 
-    public function clearPath() {
-        $this->path=[];
-    }
-    public function addPath($path,$name=null)
+    /**
+     * It clears all the paths defined
+     *
+     * @return void
+     */
+    public function clearPath()
     {
-        if($name===null) {
+        $this->path = [];
+    }
+
+    public function addPath($path, $name = null)
+    {
+        if ($name === null) {
             $this->path[] = $path;
         } else {
             $this->path[$name] = $path;
@@ -219,16 +228,19 @@ class RouteOne
     }
 
     /**
+     * It fetches the path previously defined by addPath.
+     *
      * @return int|string|null return false if not path is evaluated,<br>
-     *                     otherwise it returns the number/name of the path
+     *                     otherwise, it returns the number/name of the path
+     * @noinspection NotOptimalRegularExpressionsInspection
      */
     public function fetchPath()
     {
         $this->lastError = [];
-        $this->currentPath=null;
+        $this->currentPath = null;
         $urlFetchedOriginal = $this->getUrlFetchedOriginal();
         $this->queries = $_GET;
-        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
+        unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
         foreach ($this->path as $pnum => $pattern) {
 
             $bigs = explode('?', $pattern, 2); // aaa/bbb/{ccc}?dd=2  [/aaa/bbb/{ccc},dd=2]
@@ -236,8 +248,8 @@ class RouteOne
             $posBase = strpos($p0, '{');
             if ($posBase === false) {
                 // path does not contain { }
-                $base=$p0; // aaa/bbb/ccc
-                $p0b='';
+                $base = $p0; // aaa/bbb/ccc
+                $p0b = '';
 
             } else {
                 $base = $posBase === 0 ? '' : substr($p0, 0, $posBase - 1); // aaa/bbb/
@@ -254,7 +266,7 @@ class RouteOne
                 $urlFetched = ltrim($urlFetched, '/');
             }
             $path = $this->getExtracted($urlFetched);
-            $partTmps = ($p0b!=='') ? explode('/', $p0b) : [];
+            $partTmps = ($p0b !== '') ? explode('/', $p0b) : [];
             if (count($path) > count($partTmps)) {
                 $this->lastError[$pnum] = "Pattern [$pnum] is too big to the current url";
                 continue;
@@ -283,13 +295,13 @@ class RouteOne
                 //        , 'subcategory', 'subsubcategory'
                 switch ($name) {
                     case 'controller':
-                        $this->controller =preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->controller = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     case 'action':
-                        $this->action = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        $this->action = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     case 'module':
-                        $this->module = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        $this->module = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     case 'id':
                         $this->id = $value;
@@ -298,13 +310,13 @@ class RouteOne
                         $this->idparent = $value;
                         break;
                     case 'category':
-                        $this->category = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        $this->category = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     case 'subcategory':
-                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     case 'subsubcategory':
-                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/s', "",$value);
+                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
                         break;
                     default:
                         throw new RuntimeException('pattern incorrecto [$name:$value]');
@@ -312,7 +324,7 @@ class RouteOne
             }
             $this->event = $this->request('_event');
             $this->extra = $this->request('_extra');
-            $this->currentPath=$pnum;
+            $this->currentPath = $pnum;
             break;
         }
 
@@ -342,7 +354,7 @@ class RouteOne
         $urlFetched = $this->getUrlFetchedOriginal(); // // controller/action/id/..
         $this->isFetched = true;
 
-        unset($_GET['req']);
+        unset($_GET[$this->argumentName]);
         /** @noinspection HostnameSubstitutionInspection */
         $this->httpHost = $_SERVER['HTTP_HOST'] ?? '';
         $this->requestUri = $_SERVER['REQUEST_URI'] ?? '';
@@ -351,8 +363,8 @@ class RouteOne
             $urlFetched = ltrim($urlFetched, '/');
         }
         $this->queries = $_GET;
-        unset($this->queries['req'], $this->queries['_event'], $this->queries['_extra']);
-        $path = $this->getExtracted($urlFetched,true);
+        unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
+        $path = $this->getExtracted($urlFetched, true);
         //$first = $path[0] ?? $this->defController;
         if (isset($path[0]) && $this->moduleList !== null) {
             // if moduleArray has values then we find if the current path is a module or not.
@@ -720,18 +732,20 @@ class RouteOne
      * // it calls the method cocacola\controller\product::coffee('nescafe','1');
      * </pre>
      *
-     * @param string $classStructure [optional] Default value='{controller}Controller'
-     * @param bool   $throwOnError   [optional] Default:true,  if true then it throws an exception. If false then it
-     *                               returns the error (if any)
-     * @param string $method         [optional] Default value='{action}Action'. The name of the method to call
-     *                               (get/post). If method does not exists then it will use $methodGet or $methodPost
-     * @param string $methodGet      [optional] Default value='{action}Action{verb}'. The name of the method to call
-     *                               (get) but only if the method defined by $method is not defined.
-     * @param string $methodPost     [optional] Default value='{action}Action{verb}'. The name of the method to call
-     *                               (post) but only if the method defined by $method is not defined.
-     * @param array  $arguments      [optional] Default value=['id','idparent','event'] the arguments to pass to the
-     *                               function
-     *
+     * @param string $classStructure  [optional] Default value='{controller}Controller'.<br>
+     *                                If the class contains a namespace, then it must includes it:<br>
+     *                                "namespace\subnamespace\{controller}Controller"
+     * @param bool   $throwOnError    [optional] Default:true,  if true then it throws an exception. If false then it
+     *                                returns the error as a string (if any)
+     * @param string $method          [optional] Default value='{action}Action'. The name of the method to call
+     *                                (get/post). If method does not exists then it will use $methodGet or $methodPost
+     * @param string $methodGet       [optional] Default value='{action}Action{verb}'. The name of the method to call
+     *                                (get) but only if the method defined by $method is not defined.
+     * @param string $methodPost      [optional] Default value='{action}Action{verb}'. The name of the method to call
+     *                                (post) but only if the method defined by $method is not defined.
+     * @param array  $arguments       [optional] Default value=['id','idparent','event'] the arguments to pass to the
+     *                                function
+     * @param array  $injectArguments [optional] You can inject arguments into the constructor of the instance.
      * @return string|null
      * @throws Exception
      */
@@ -739,12 +753,12 @@ class RouteOne
           $classStructure = '{controller}Controller', $throwOnError = true
         , $method = '{action}Action', $methodGet = '{action}Action{verb}'
         , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
+        , $injectArguments = []
     )
     {
         if ($this->notAllowed === true) {
-            throw new UnexpectedValueException('Input is not allowed');
+            throw new UnexpectedValueException('Input method is not allowed');
         }
-
         $op = $this->replaceNamed($classStructure);
 
         if (!class_exists($op, true)) {
@@ -754,7 +768,7 @@ class RouteOne
             return "Class $op doesn't exist";
         }
         try {
-            $controller = new $op();
+            $controller = new $op(...$injectArguments);
             $actionRequest = $this->replaceNamed($method);
             $actionGetPost = (!$this->isPostBack) ? $this->replaceNamed($methodGet)
                 : $this->replaceNamed($methodPost);
@@ -1008,7 +1022,7 @@ class RouteOne
         $this->verb = 'GET';
         $this->notAllowed = false;
         $this->clearPath();
-        $this->currentPath=null;
+        $this->currentPath = null;
         return $this;
     }
 
@@ -1150,7 +1164,7 @@ class RouteOne
      */
     public function getHeader($key, $valueIfNotFound = null)
     {
-        $keyname = 'HTTP_' . $key;
+        $keyname = 'HTTP_' .strtoupper($key);
         return $_SERVER[$keyname] ?? $valueIfNotFound;
     }
 
@@ -1468,8 +1482,8 @@ class RouteOne
     {
         $this->notAllowed = false; // reset
         $this->isFetched = true;
-        $urlFetchedOriginal = $_GET['req'] ?? null; // controller/action/id/..
-        unset($_GET['req']);
+        $urlFetchedOriginal = $_GET[$this->argumentName] ?? null; // controller/action/id/..
+        unset($_GET[$this->argumentName]);
         /** @noinspection HostnameSubstitutionInspection */
         $this->httpHost = isset($_SERVER['HTTP_HOST']) ? filter_var($_SERVER['HTTP_HOST'], FILTER_SANITIZE_URL) : '';
         $this->requestUri = isset($_SERVER['REQUEST_URI']) ? filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL) : '';
@@ -1481,9 +1495,9 @@ class RouteOne
      * @param bool   $sanitize
      * @return array
      */
-    private function getExtracted($urlFetched,$sanitize=false): array
+    private function getExtracted($urlFetched, $sanitize = false): array
     {
-        if($sanitize) {
+        if ($sanitize) {
             $urlFetched = filter_var($urlFetched, FILTER_SANITIZE_URL);
         }
         if (is_array($this->identify) && $this->type === '') {
