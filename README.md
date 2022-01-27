@@ -5,7 +5,8 @@ It reads the URL route and parses the values of path, so it could be interpreted
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
 [![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php-%3E5.6-green.svg)]()
+[![php](https://img.shields.io/badge/php-%3E7.1-green.svg)]()
+[![php](https://img.shields.io/badge/php-%3E8.0-green.svg)]()
 [![coverage](https://img.shields.io/badge/coverage-80%25-green)]()
 [![compatible](https://img.shields.io/badge/compatible-linux%7Cwindows%7Cmacos-green)]()
 
