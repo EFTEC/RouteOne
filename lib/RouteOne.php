@@ -322,8 +322,8 @@ class RouteOne
                         throw new RuntimeException('pattern incorrecto [$name:$value]');
                 }
             }
-            $this->event = $this->request('_event');
-            $this->extra = $this->request('_extra');
+            $this->event = $this->getRequest('_event');
+            $this->extra = $this->getRequest('_extra');
             $this->currentPath = $pnum;
             break;
         }
@@ -414,8 +414,8 @@ class RouteOne
                 /** @noinspection PhpUnusedLocalVariableInspection */
                 $id++;
                 $this->id = end($path); // id is the last element of the path
-                $this->event = $this->request('_event');
-                $this->extra = $this->request('_extra');
+                $this->event = $this->getRequest('_event');
+                $this->extra = $this->getRequest('_extra');
                 return;
         }
 
@@ -427,8 +427,8 @@ class RouteOne
         $this->idparent = $path[$id] ?? null;
         /** @noinspection PhpUnusedLocalVariableInspection */
         $id++;
-        $this->event = $this->request('_event');
-        $this->extra = $this->request('_extra');
+        $this->event = $this->getRequest('_event');
+        $this->extra = $this->getRequest('_extra');
     }
 
     protected function str_replace_ex($search, $replace, $subject, $limit = 99999)
@@ -436,10 +436,7 @@ class RouteOne
         return implode($replace, explode($search, $subject, $limit + 1));
     }
 
-    private function request($id)
-    {
-        return $_POST[$id] ?? $_GET[$id] ?? null;
-    }
+
 
     /**
      * It is an associative array with the allowed paths or null (default behaviour) to allows any path.<br>
@@ -1158,7 +1155,7 @@ class RouteOne
     /**
      * It gets the current header (if any)
      *
-     * @param string     $key
+     * @param string     $key The key to read
      * @param null|mixed $valueIfNotFound
      * @return mixed|null
      */
@@ -1167,12 +1164,45 @@ class RouteOne
         $keyname = 'HTTP_' .strtoupper($key);
         return $_SERVER[$keyname] ?? $valueIfNotFound;
     }
+    /**
+     * It gets the Post value if not the Get value
+     *
+     * @param string     $key The key to read
+     * @param null|mixed $valueIfNotFound
+     * @return mixed|null
+     */
+    public function getRequest($key, $valueIfNotFound=null)
+    {
+        return $_POST[$key] ?? $_GET[$key] ?? $valueIfNotFound;
+    }
+    /**
+     * It gets the Post value or returns the default value if not found
+     *
+     * @param string     $key The key to read
+     * @param null|mixed $valueIfNotFound
+     * @return mixed|null
+     */
+    public function getPost($key, $valueIfNotFound=null)
+    {
+        return $_POST[$key]?? $valueIfNotFound;
+    }
+    /**
+     * It gets the Get (url parameter) value or returns the default value if not found
+     *
+     * @param string     $key The key to read
+     * @param null|mixed $valueIfNotFound
+     * @return mixed|null
+     */
+    public function getGet($key, $valueIfNotFound=null)
+    {
+        return $_GET[$key]?? $valueIfNotFound;
+    }
 
     /**
      * It gets the body of a request.
      *
-     * @param bool $jsonDeserialize
-     * @param bool $asAssociative
+     * @param bool $jsonDeserialize if true then it de-serialize the values.
+     * @param bool $asAssociative if true (default value) then it returns as an associative array.
      * @return false|mixed|string
      */
     public function getBody($jsonDeserialize = false, $asAssociative = true)

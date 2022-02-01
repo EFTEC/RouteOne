@@ -908,6 +908,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2022-02-01 1.23
+  * [new] getRequest(), getPost(),getGet() 
 * 2022-01-27 1.22
   * [new] callObjectEx allows adding arguments to the constructor.
   * [new] clearPath()
