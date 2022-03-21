@@ -19,7 +19,7 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2021 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.22 2022-01-27
+ * @version   1.24 2022-03-11
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -255,12 +255,12 @@ class RouteOne
                 $base = $posBase === 0 ? '' : substr($p0, 0, $posBase - 1); // aaa/bbb/
                 $p0b = substr($p0, $posBase); // {ccc}
             }
-            if ($base !== '' && strpos($urlFetchedOriginal, $base) !== 0) {
+            if ($base !== '' && strpos($urlFetchedOriginal??'', $base) !== 0) {
                 // base url does not match.
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
                 continue;
             }
-            $urlFetched = substr($urlFetchedOriginal, strlen($base));
+            $urlFetched = substr($urlFetchedOriginal??'', strlen($base));
             // nginx returns a path as /aaa/bbb apache aaa/bbb
             if ($urlFetched !== '') {
                 $urlFetched = ltrim($urlFetched, '/');
@@ -481,7 +481,7 @@ class RouteOne
         $url = $this->httpHost;
         //if (strpos($url, '.') === false || ip2long($url)) {
         //}
-        if (strpos($url, 'www.') === false) {
+        if (strpos($url??'', 'www.') === false) {
             $location = $this->getLocation($https);
             $location .= '//www.' . $url . $this->requestUri;
             if ($redirect) {
@@ -558,7 +558,7 @@ class RouteOne
     public function alwaysNakedDomain($https = false, $redirect = true)
     {
         $url = $this->httpHost;
-        if (strpos($url, 'www.') === 0) {
+        if (strpos($url??'', 'www.') === 0) {
             $host = substr($url, 4); // we remove the www. at first
             $location = $this->getLocation($https);
             $location .= '//' . $host . $this->requestUri;
@@ -828,7 +828,7 @@ class RouteOne
                 return '{' . $nameField . '}';
             }
             $result = $this->{$nameField};
-            if (strpos($result, '_') > 0) {
+            if (strpos($result??'', '_') > 0) {
                 $x = explode('_', $result)[0];
                 switch ($x) {
                     case 'uc':
@@ -1536,7 +1536,7 @@ class RouteOne
                     $this->type = $ty;
                     break;
                 }
-                if (strpos($urlFetched, $path) === 0) {
+                if (strpos($urlFetched??'', $path) === 0) {
                     $urlFetched = ltrim($this->str_replace_ex($path, '', $urlFetched, 1), '/');
                     $this->type = $ty;
                     break;
