@@ -53,14 +53,23 @@ class RouterOneTestPath extends TestCase
         $_SERVER['REQUEST_METHOD']='POST';
         $_GET['req']='module1/controller1/action1';
         $this->ro=new RouteOne('http://www.example.dom');
-        $this->ro->addPath('{module}/{controller}/{action}');
-        $this->ro->fetchPath();
+        $this->ro->addPath('{module}/{controller}/{action}','path1');
+        self::assertEquals('path1', $this->ro->fetchPath());
         self::assertEquals(true,$this->ro->isPostBack());
         self::assertEquals('module1',$this->ro->module);
         self::assertEquals('controller1',$this->ro->controller);
         self::assertEquals('action1',$this->ro->action);
         self::assertEquals('POST',$this->ro->verb);
         unset($_SERVER['REQUEST_METHOD']);
+    }
+    public function testMisc1NotFound(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'www.example.dom';
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_GET['req'] = 'module1/controller1/action1';
+        $this->ro = new RouteOne('http://www.example.dom');
+        $this->ro->addPath('xx/{module}/{controller}/{action}/{xx}', 'path1');
+        self::assertEquals(null, $this->ro->fetchPath());
     }
     /**
      * @throws Exception

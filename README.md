@@ -3,7 +3,7 @@ It reads the URL route and parses the values of path, so it could be interpreted
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
-[![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
 [![php](https://img.shields.io/badge/php-%3E7.1-green.svg)]()
 [![php](https://img.shields.io/badge/php-%3E8.0-green.svg)]()
@@ -16,19 +16,59 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
 
 ## Table of contents
 
-- [RouteOne](#routeone)
-  - [Example:](#example)
-  - [What it does?](#what-it-does)
-  - [Getting started](#getting-started)
-  - [Routes](#routes)
-  - [Methods](#methods)
-  - [fields](#fields)
-  - [Changelog](#changelog)
-
+<!-- TOC -->
+* [RouteOne](#routeone)
+  * [Table of contents](#table-of-contents)
+  * [Example:](#example-)
+  * [What it does?](#what-it-does)
+    * [What is **$id**, **$idparent** and **$event**?](#what-is-id--idparent-and-event-)
+    * [**id**](#id)
+    * [**idparent**](#idparent)
+    * [**event**](#event)
+    * [**Module**](#module)
+  * [Getting started](#getting-started)
+    * [1) Create a .htaccess file in the folder root (Apache)](#1--create-a-htaccess-file-in-the-folder-root--apache-)
+    * [Or configure nginx.conf (Nginx) Linux](#or-configure-nginxconf--nginx--linux)
+    * [Or configure nginx.conf (Nginx) Windows](#or-configure-nginxconf--nginx--windows)
+  * [Routes](#routes)
+    * [API route](#api-route)
+    * [WS route](#ws-route)
+    * [Controller route](#controller-route)
+    * [FRONT route](#front-route)
+  * [Methods](#methods)
+    * [__construct($base='', $forcedType=null, $isModule=false)](#--construct--base---forcedtypenull-ismodulefalse-)
+    * [getQuery($key,$valueIfNotFound=null)](#getquery--keyvalueifnotfoundnull-)
+    * [setQuery($key,$value)](#setquery--keyvalue-)
+    * [fetch](#fetch)
+    * [callObject](#callobject)
+    * [callObjectEx](#callobjectex)
+    * [callFile($fileStructure='%s.php',$throwOnError=true)](#callfile--filestructuresphp--throwonerrortrue-)
+    * [getHeader()](#getheader--)
+    * [getBody()](#getbody--)
+    * [](#)
+    * [getCurrentUrl($withoutFilename = true)](#getcurrenturl--withoutfilename--true-)
+    * [getCurrentServer()](#getcurrentserver--)
+    * [setCurrentServer($serverName)](#setcurrentserver--servername-)
+    * [getUrl($extraQuery = '',$includeQuery=false)](#geturl--extraquery----includequeryfalse-)
+    * [url($module,$controller,$action,$id,$idparent)](#url--modulecontrolleractionididparent-)
+    * [urlFront($module,$category,$subcategory,$subsubcategory,$id)](#urlfront--modulecategorysubcategorysubsubcategoryid-)
+    * [alwaysWWW($https = false)](#alwayswww--https--false-)
+    * [alwaysHTTPS()](#alwayshttps--)
+    * [alwaysNakedDomain($https = false)](#alwaysnakeddomain--https--false-)
+  * [Using Paths](#using-paths)
+    * [clearPath()](#clearpath--)
+    * [addPath()](#addpath--)
+    * [fetchPath()](#fetchpath--)
+  * [fields](#fields)
+  * [Whitelist](#whitelist)
+    * [Whitelist input.](#whitelist-input)
+    * [$type](#type)
+  * [Changelog](#changelog)
+<!-- TOC -->
 
 ## Example:
 
-Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into:
+Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into variables:
 
 ```php
 use eftec\routeone\RouteOne;
@@ -54,7 +94,7 @@ Example using path (since 1.20)
 
 ```php
 $route=new RouteOne('http://www.example.dom');
-$route->addPath('api/{controller}/{action}/{id}'); // any rout
+$route->addPath('api/{controller}/{action}/{id}'); // any route
 $route->addPath('{controller}/{id}/{idparent}');
 $route->fetchPath();
 $this->callObjectEx('cocacola\controller\{controller}Controller');
@@ -66,7 +106,7 @@ $this->callObjectEx('cocacola\controller\{controller}Controller');
 
 Let's say we do the next operation:
 
-An user calls the next website http://somedomain.com/Customer/Insert, he wants want to show a form to insert a customer
+A user calls the next website http://somedomain.com/Customer/Insert, he wants to show a form to insert a customer
 
 ```php
 use \eftec\routeone\RouteOne;
@@ -88,7 +128,7 @@ $route->callObjectEx('somenamespace\\controller\\{controller}Controller'); // wh
 This code calls to the method **InsertActionGet** (GET), **InsertActionPost** (POST) or **InsertAction** (GET/POST)
 inside the class **Customer**
 
-The method called is written as follow:
+The method called is written as follows:
 
 ```php
 class Customer {
@@ -118,7 +158,8 @@ Where APPL is the **idparent**
 
 ### **event**
 
-Now, let's say we click on some button or we do some action.  It could be captured by the field **_event** and it is read by the argument **$event**. This variable could be send via GET or POST.
+Now, let's say we click on some button, or we do some action.  It could be captured by the field **_event**, and it 
+is read by the argument **$event**. This variable could be sent via GET or POST.
 
 > http://somedomain.com/Customer/Update/20/APPL?_event=click
 
@@ -266,7 +307,7 @@ $route->callObject('somenamespace\\controller\\%sController'); // where it will 
 
 > Note:
 >
-> If you want to use an argument different than "req", then you can change it using the next code:
+> If you want to use an argument different as "req", then you can change it using the next code:
 >
 > $route->argumentName='newargument';
 
@@ -307,7 +348,7 @@ WS is an alternative to API. We could use API/WS or both.  The difference is how
 
 where 
 * **https://localhost** is the base (it could be changed on the constructor)
-* **ws** indicates we are calling an "ws". This value could be changed via **$this->setIdentifyType()**
+* **ws** indicates we are calling a "ws". This value could be changed via **$this->setIdentifyType()**
 * **Controller**. It's the controller class to call. 
 * **Action**. It's the action (method) to call
 * **id**. Some unique identifier.
@@ -381,9 +422,9 @@ class CustomerController {
 
 ### FRONT route
 
-The front route (for the front-end) is different than other routes. Syntactically it is distributed on category, subcategory and sub-subcategory. 
+The front route (for the front-end) is different as other routes. Syntactically it is distributed on category, subcategory and sub-subcategory. 
 
-> This route is not identified automatically so it must be set in the constructor
+> This route is not identified automatically, so it must be set in the constructor
 
 > https://localhost/category/{subcategory}/{subsubcategory}/{id}
 
@@ -444,7 +485,7 @@ if ($route->getType()=='front') {
 ### __construct($base='', $forcedType=null, $isModule=false)
 
 * string $base base url
-* string $forcedType=['api','ws','controller','front'][$i]<br>
+* string $forcedType=['api','ws','controller','front']\[$i]<br>
     <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
     <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
     <b>controller</b> then it expects a path as controller/action/id/idparent<br>
@@ -606,7 +647,7 @@ class CustomerController {
 Results:
 
 | url                                                      | method called                                     |
-| -------------------------------------------------------- | ------------------------------------------------- |
+|----------------------------------------------------------|---------------------------------------------------|
 | http://localhost/Customer/Green (GET)                    | GreenAction                                       |
 | http://localhost/Customer/Green/20/30?_event=click (GET) | GreenAction($id=20, $idparent=30, $event='click') |
 | http://localhost/Customer/Green (POST)                   | GreenAction                                       |
@@ -665,7 +706,7 @@ $body=$this->getBody(true,true); // ["id"=>1,"name"=>john]
 
 Returns the current base url without traling space, paremters or queries
 
-> <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'] and  it could be modified by the end-user
+> <b>Note</b>: this function relies on $_SERVER['SERVER_NAME'], and  it could be modified by the end-user
 
 ### getCurrentServer()
 
@@ -678,7 +719,7 @@ $route->getCurrentServer(); // http://somedomain
 ### setCurrentServer($serverName)
 
 It sets the current server name.  It is used by getCurrentUrl() and getCurrentServer().    
-**Note:** If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'] and it could be modified
+**Note:** If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'], and it could be modified
  by the user.
 
 ```php 
@@ -773,9 +814,13 @@ Syntax:
 
 It adds a new path.
 
-The path could start with a static location but the rest of the path must be defined by variables (enclosed by {}) and separated by "/".
-
+The path could start with a static location but the rest of the path must be defined by variables (enclosed by {}) 
+and separated by "/".
 You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}
+The **name** could be obtained using $this->currentPath. If you add a name with the same name, then it is replaced. 
+If you don't set a name, then it uses an autonumeric.
+The **name** is also returned when you call $this->fetchPath()
+
 
 Example:
 
@@ -788,7 +833,9 @@ $this->addPath('{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2
 // url: /myapi/otherfolder/dummy/10/20  =>(controller: dummy, id=10, idparent=20)
 ```
 
-You can define different paths, however it only uses the first path that matches some URL.
+> You can define different paths, however it only uses the first part of the path that matches some URL.
+> 'path/somepath/{id}' will work
+> 'path/{id}/other' will not work
 
 ### fetchPath()
 
@@ -796,15 +843,15 @@ Syntax:
 
 > fetchPath()
 
-It fetches the path previously defined by addPath.
+It fetches the path previously defined by addPath, and it returns the name(or number) of the path. If not found, then it returns false
 
 Example:
 
 ```php
 $route=new RouteOne('http://www.example.dom');
-$route->addPath('{controller}/{id}/{idparent}');
-$route->fetchPath();
-// url: http://www.example.dom/customer/1/200
+$route->addPath('{controller}/{id}/{idparent}','optionalname');
+// if the url is : http://www.example.dom/customer/1/200 then it will return
+echo $route->fetchPath(); // optionalname
 echo $route->controller; // customer
 echo $route->id; // 1
 echo $route->idparent; // 200
@@ -815,32 +862,32 @@ echo $route->idparent; // 200
 
 ## fields
 
-| Field           | Description                                                  | Example                                                      |
-| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| $argumentName   | The name of the argument used by Apache .Htaccess and nginx  | $this-argumentName='req';                                    |
-| $base           | It is the base url.                                          | $this->base=0;                                               |
-| $type           | It is the type of url (api,ws,controller or front)           | echo $this->type; // api                                     |
-| $module         | It's the current module                                      | echo $this->module;                                          |
-| $controller     | It's the controller.                                         | echo $this->controller;                                      |
-| $action         | It's the action.                                             | echo $this->action;                                          |
-| $id             | It's the identifier                                          | echo $this->id;                                              |
-| $event          | It's the event (such as "click on button).                   | echo$this->event;                                            |
-| $idparent       | It is the current parent id (if any)                         | echo $this->idparent;                                        |
-| $extra          | It's the event (such as "click on button)                    | echo $this->extra;                                           |
-| $category       | The current category. It is useful for the type 'front'      | echo $this->category;                                        |
-| $subcategory    | The current sub-category. It is useful for the type 'front'  | echo $this->subcategory;                                     |
-| $subsubcategory | The current sub-sub-category. It is useful for the type  'front' | echo $this->subsubcategory;                                  |
+| Field           | Description                                                              | Example                                                                 |
+|-----------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| $argumentName   | The name of the argument used by Apache .Htaccess and nginx              | $this-argumentName='req';                                               |
+| $base           | It is the base url.                                                      | $this->base=0;                                                          |
+| $type           | It is the type of url (api,ws,controller or front)                       | echo $this->type; // api                                                |
+| $module         | It's the current module                                                  | echo $this->module;                                                     |
+| $controller     | It's the controller.                                                     | echo $this->controller;                                                 |
+| $action         | It's the action.                                                         | echo $this->action;                                                     |
+| $id             | It's the identifier                                                      | echo $this->id;                                                         |
+| $event          | It's the event (such as "click on button).                               | echo$this->event;                                                       |
+| $idparent       | It is the current parent id (if any)                                     | echo $this->idparent;                                                   |
+| $extra          | It's the event (such as "click on button)                                | echo $this->extra;                                                      |
+| $category       | The current category. It is useful for the type 'front'                  | echo $this->category;                                                   |
+| $subcategory    | The current sub-category. It is useful for the type 'front'              | echo $this->subcategory;                                                |
+| $subsubcategory | The current sub-sub-category. It is useful for the type  'front'         | echo $this->subsubcategory;                                             |
 | $identify       | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
-| $isPostBack     | its true if the page is POST, otherwise false.               | if ($this->isPostBack) { ... };                              |
-| $verb           | The current verb, it could be GET,POST,PUT and DELETE.       | if ($this->verb) { ... };                                    |
+| $isPostBack     | its true if the page is POST, otherwise false.                           | if ($this->isPostBack) { ... };                                         |
+| $verb           | The current verb, it could be GET,POST,PUT and DELETE.                   | if ($this->verb) { ... };                                               |
 
 ## Whitelist
 
-| Field          | Description                                                  | Example                                                      |
-| -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| $allowedVerbs  | A list with allowed verbs                                    | $this->allowedVerbs=['GET', 'POST', 'PUT', 'DELETE'];        |
-| $allowedFields | A list with allowed fields used by **callObjectEx()**        | $this->allowedFields=['controller', 'action', 'verb', 'event', 'type', 'module', 'id'<br />, 'idparent','category', 'subcategory', 'subsubcategory']; |
-| setWhitelist() | It sets an associative array with the whitelist to **controller**, **action**, **category**, **subcategory**, **subsubcategory** and **module**. <br />If not set (null default value), then it allows any entry.<br />Currently it only work with **controller** and **category** | $this->setWhitelist('controller','Purchase','Invoice','Customer');<br />$this->setWhitelist('controller',null) // allows any controller; |
+| Field          | Description                                                                                                                                                                                                                                                                        | Example                                                                                                                                               |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| $allowedVerbs  | A list with allowed verbs                                                                                                                                                                                                                                                          | $this->allowedVerbs=['GET', 'POST', 'PUT', 'DELETE'];                                                                                                 |
+| $allowedFields | A list with allowed fields used by **callObjectEx()**                                                                                                                                                                                                                              | $this->allowedFields=['controller', 'action', 'verb', 'event', 'type', 'module', 'id'<br />, 'idparent','category', 'subcategory', 'subsubcategory']; |
+| setWhitelist() | It sets an associative array with the whitelist to **controller**, **action**, **category**, **subcategory**, **subsubcategory** and **module**. <br />If not set (null default value), then it allows any entry.<br />Currently it only work with **controller** and **category** | $this->setWhitelist('controller','Purchase','Invoice','Customer');<br />$this->setWhitelist('controller',null) // allows any controller;              |
 
 ### Whitelist input.
 Whitelisting a method allows two operations:
@@ -878,12 +925,12 @@ it returns the current type of URL used.
 
 > Also obtained via getType()
 
-|type|url expected|description|
-|----|------------|------------|
-| api |domain.dom/api/controller/action/id | {module}\api\controller\action\id\{idparent}?_event=event    |
-| ws |domain.dom/ws/controller/action/id | {module}\ws\controller\action\id\{idparent}?_event=event     |
-| controller |domain.dom/controller/action/id | {module}\controller\action\id\{idparent}?_event=event     |
-| front |domain.dom/cat/subcat/subsubcat/id | {module}\category\subcategory\subsubcategory\id?_event=event    |
+| type       | url expected                        | description                                                  |
+|------------|-------------------------------------|--------------------------------------------------------------|
+| api        | domain.dom/api/controller/action/id | {module}\api\controller\action\id\{idparent}?_event=event    |
+| ws         | domain.dom/ws/controller/action/id  | {module}\ws\controller\action\id\{idparent}?_event=event     |
+| controller | domain.dom/controller/action/id     | {module}\controller\action\id\{idparent}?_event=event        |
+| front      | domain.dom/cat/subcat/subsubcat/id  | {module}\category\subcategory\subsubcategory\id?_event=event |
 
 Example:
 
@@ -908,6 +955,8 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 
 ## Changelog
 
+* 2023-01-26
+  * some cleanups 
 * 2022-03-11 1.24
   * **[fix]** fix many problems when the url is null.
 * 2022-02-01 1.23
@@ -948,9 +997,9 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
     * Removed Travis.
     * Lowered the requirement. Now, this library works in PHP 5.6 and higher (instead of PHP 7.0 and higher)
     * Constructor has a new argument, it could fetch() the values
-    * alwaysHTTPS() has a new argument that it could returns the full URL (if it requires redirect) or null
-    * alwaysWWW() has a new argument that it could returns the full URL (if it requires redirect) or null
-    * alwaysNakedDomain() has a new argument that it could returns the full URL (if it requires redirect) or null
+    * alwaysHTTPS() has a new argument that it could return the full URL (if it requires redirect) or null
+    * alwaysWWW() has a new argument that it could return the full URL (if it requires redirect) or null
+    * alwaysNakedDomain() has a new argument that it could return the full URL (if it requires redirect) or null
 * 2020-06-14 1.15
     * Added default values in setDefaultValues().     
     * Method fetch() now it unset the value.    

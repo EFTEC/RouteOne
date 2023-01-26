@@ -1,10 +1,7 @@
-<?php
+<?php /** @noinspection PrintfScanfArgumentsInspection */
+
 /** @noinspection PhpUnused
  * @noinspection UnknownInspectionInspection
- * @noinspection PhpMissingParamTypeInspection
- * @noinspection PhpMissingReturnTypeInspection
- * @noinspection PrintfScanfArgumentsInspection
- * @noinspection ReturnTypeCanBeDeclaredInspection
  */
 
 namespace eftec\routeone;
@@ -17,9 +14,9 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package   RouteOne
- * @copyright 2019-2021 Jorge Castro Castillo
+ * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.24 2022-03-11
+ * @version   1.25 2023-01-26
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
@@ -194,7 +191,7 @@ class RouteOne
      * @return $this
      */
     public function setDefaultValues($defController = '', $defAction = '', $defCategory = ''
-        ,                            $defSubCategory = '', $defSubSubCategory = '', $defModule = '')
+        ,                            $defSubCategory = '', $defSubSubCategory = '', $defModule = ''): self
     {
         if ($this->isFetched) {
             throw new RuntimeException("RouteOne: you can't call setDefaultValues() after fetch()");
@@ -213,24 +210,31 @@ class RouteOne
      *
      * @return void
      */
-    public function clearPath()
+    public function clearPath(): void
     {
         $this->path = [];
     }
 
-    public function addPath($path, $name = null)
+    /**
+     * It adds a paths that could be evaluated using fetchPath()
+     * @param string|null $path The path, example "aaa/{controller}/{id}"
+     * @param string|null $name (optional), the name of the path
+     * @return $this
+     */
+    public function addPath(?string $path,?string $name = null): RouteOne
     {
         if ($name === null) {
             $this->path[] = $path;
         } else {
             $this->path[$name] = $path;
         }
+        return $this;
     }
 
     /**
      * It fetches the path previously defined by addPath.
      *
-     * @return int|string|null return false if not path is evaluated,<br>
+     * @return int|string|null return null if not path is evaluated,<br>
      *                     otherwise, it returns the number/name of the path
      * @noinspection NotOptimalRegularExpressionsInspection
      */
@@ -295,13 +299,13 @@ class RouteOne
                 //        , 'subcategory', 'subsubcategory'
                 switch ($name) {
                     case 'controller':
-                        $this->controller = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->controller = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     case 'action':
-                        $this->action = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->action = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     case 'module':
-                        $this->module = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->module = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     case 'id':
                         $this->id = $value;
@@ -310,13 +314,13 @@ class RouteOne
                         $this->idparent = $value;
                         break;
                     case 'category':
-                        $this->category = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->category = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     case 'subcategory':
-                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     case 'subsubcategory':
-                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/s', "", $value);
+                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
                     default:
                         throw new RuntimeException('pattern incorrecto [$name:$value]');
@@ -348,7 +352,7 @@ class RouteOne
      * Module/category/subcategory/subsubcategory/id/idparent?_event=xx&extra=xxx</li>
      * </ul>
      */
-    public function fetch()
+    public function fetch(): void
     {
         //$urlFetched = $_GET['req'] ?? null; // controller/action/id/..
         $urlFetched = $this->getUrlFetchedOriginal(); // // controller/action/id/..
@@ -431,7 +435,7 @@ class RouteOne
         $this->extra = $this->getRequest('_extra');
     }
 
-    protected function str_replace_ex($search, $replace, $subject, $limit = 99999)
+    protected function str_replace_ex($search, $replace, $subject, $limit = 99999): string
     {
         return implode($replace, explode($search, $subject, $limit + 1));
     }
@@ -455,7 +459,7 @@ class RouteOne
      * @param string     $type  =['controller','category','action','subcategory','subsubcategory','module'][$i]
      * @param array|null $array if null (default value) then we don't validate the information.
      */
-    public function setWhiteList($type, $array)
+    public function setWhiteList($type, $array): void
     {
         if ($this->isFetched && $array !== null) {
             throw new RuntimeException("RouteOne: you can't call setWhiteList() after fetch()");
@@ -476,7 +480,7 @@ class RouteOne
      * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the full url to redirect.
      */
-    public function alwaysWWW($https = false, $redirect = true)
+    public function alwaysWWW($https = false, $redirect = true): ?string
     {
         $url = $this->httpHost;
         //if (strpos($url, '.') === false || ip2long($url)) {
@@ -497,7 +501,7 @@ class RouteOne
         return null;
     }
 
-    private function getLocation($https)
+    private function getLocation($https): string
     {
         if ($https) {
             $port = $_SERVER['HTTP_PORT'] ?? '443';
@@ -524,7 +528,7 @@ class RouteOne
      * @return string|null It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the url to redirect.
      */
-    public function alwaysHTTPS($redirect = true)
+    public function alwaysHTTPS($redirect = true): ?string
     {
         if (strpos($this->httpHost, '.') === false || ip2long($this->httpHost)) {
             return null;
@@ -555,7 +559,7 @@ class RouteOne
      * @return string|null   It returns null if the operation failed (no correct url or no need to redirect)<br>
      *                       Otherwise, if $redirect=false, it returns the full url to redirect.
      */
-    public function alwaysNakedDomain($https = false, $redirect = true)
+    public function alwaysNakedDomain($https = false, $redirect = true): ?string
     {
         $url = $this->httpHost;
         if (strpos($url??'', 'www.') === 0) {
@@ -617,7 +621,7 @@ class RouteOne
           $classStructure = '%sController', $throwOnError = true
         , $method = '%sAction', $methodGet = '%sActionGet', $methodPost = '%sActionPost'
         , $arguments = ['id', 'idparent', 'event']
-    )
+    ): ?string
     {
         if ($this->notAllowed === true) {
             throw new UnexpectedValueException('Input is not allowed');
@@ -630,7 +634,7 @@ class RouteOne
         } else {
             $op = sprintf($classStructure, $this->category, $this->subcategory, $this->subsubcategory);
         }
-        if (!class_exists($op, true)) {
+        if (!class_exists($op)) {
             if ($throwOnError) {
                 throw new RuntimeException("Class $op doesn't exist");
             }
@@ -641,6 +645,7 @@ class RouteOne
             if ($this->type !== 'front') {
                 $actionRequest = sprintf($method, $this->action);
             } else {
+                /** @noinspection PrintfScanfArgumentsInspection */
                 $actionRequest = sprintf($method, $this->subcategory, $this->subsubcategory);
             }
             $actionGetPost = (!$this->isPostBack) ? sprintf($methodGet, $this->action)
@@ -735,7 +740,7 @@ class RouteOne
      * @param bool   $throwOnError    [optional] Default:true,  if true then it throws an exception. If false then it
      *                                returns the error as a string (if any)
      * @param string $method          [optional] Default value='{action}Action'. The name of the method to call
-     *                                (get/post). If method does not exists then it will use $methodGet or $methodPost
+     *                                (get/post). If method does not exist then it will use $methodGet or $methodPost
      * @param string $methodGet       [optional] Default value='{action}Action{verb}'. The name of the method to call
      *                                (get) but only if the method defined by $method is not defined.
      * @param string $methodPost      [optional] Default value='{action}Action{verb}'. The name of the method to call
@@ -751,14 +756,14 @@ class RouteOne
         , $method = '{action}Action', $methodGet = '{action}Action{verb}'
         , $methodPost = '{action}Action{verb}', $arguments = ['id', 'idparent', 'event']
         , $injectArguments = []
-    )
+    ): ?string
     {
         if ($this->notAllowed === true) {
             throw new UnexpectedValueException('Input method is not allowed');
         }
         $op = $this->replaceNamed($classStructure);
 
-        if (!class_exists($op, true)) {
+        if (!class_exists($op)) {
             if ($throwOnError) {
                 throw new RuntimeException("Class $op doesn't exist");
             }
@@ -820,7 +825,7 @@ class RouteOne
      *
      * @return string
      */
-    private function replaceNamed($format)
+    private function replaceNamed($format): string
     {
         return preg_replace_callback("/{(\w+)}/", function ($matches) {
             $nameField = $matches[1];
@@ -865,7 +870,7 @@ class RouteOne
      * @return string|null
      * @throws Exception
      */
-    public function callFile($fileStructure = '%s.php', $throwOnError = true)
+    public function callFile($fileStructure = '%s.php', $throwOnError = true): ?string
     {
         $op = sprintf($fileStructure, $this->controller, $this->module, $this->type);
         try {
@@ -888,7 +893,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getCurrentUrl($withoutFilename = true)
+    public function getCurrentUrl($withoutFilename = true): string
     {
         $sn = $_SERVER['SCRIPT_NAME'] ?? '';
         if ($withoutFilename) {
@@ -904,7 +909,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getCurrentServer()
+    public function getCurrentServer(): string
     {
         $server_name = $this->serverName ?? $_SERVER['SERVER_NAME'] ?? null;
         $sp = $_SERVER['SERVER_PORT'] ?? 80;
@@ -919,10 +924,10 @@ class RouteOne
      *
      * @param string $serverName Example: "localhost", "127.0.0.1", "www.site.com", etc.
      *
-     * @see \eftec\routeone\RouteOne::getCurrentUrl
-     * @see \eftec\routeone\RouteOne::getCurrentServer()
+     * @see RouteOne::getCurrentUrl
+     * @see RouteOne::getCurrentServer
      */
-    public function setCurrentServer($serverName)
+    public function setCurrentServer($serverName): void
     {
         $this->serverName = $serverName;
     }
@@ -945,7 +950,7 @@ class RouteOne
         $action = null,
         $id = null,
         $idparent = null
-    )
+    ): self
     {
         if ($module !== null) {
             $this->module = $module;
@@ -973,7 +978,7 @@ class RouteOne
         $subcategory = null,
         $subsubcategory = null,
         $id = null
-    )
+    ): RouteOne
     {
         if ($module) {
             $this->module = $module;
@@ -998,7 +1003,7 @@ class RouteOne
     // .htaccess:
     // RewriteRule ^(.*)$ index.php?req=$1 [L,QSA]
 
-    public function reset()
+    public function reset(): RouteOne
     {
         // $this->base=''; base is always keep
         $this->isFetched = false;
@@ -1038,7 +1043,7 @@ class RouteOne
      *
      * @param $array
      */
-    public function setIdentifyType($array)
+    public function setIdentifyType($array): void
     {
         $this->identify = $array;
     }
@@ -1051,9 +1056,9 @@ class RouteOne
      * @param string $urlPart
      *
      * @return string
-     * @see \eftec\routeone\RouteOne::$base
+     * @see RouteOne
      */
-    public function getNonRouteUrl($urlPart)
+    public function getNonRouteUrl($urlPart): string
     {
         return $this->base . '/' . $urlPart;
     }
@@ -1068,7 +1073,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getUrl($extraQuery = '', $includeQuery = false)
+    public function getUrl($extraQuery = '', $includeQuery = false): string
     {
 
         $url = $this->base . '/';
@@ -1126,7 +1131,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -1136,7 +1141,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getModule()
+    public function getModule(): string
     {
         return $this->module;
     }
@@ -1220,7 +1225,7 @@ class RouteOne
      * @param string     $key
      * @param null|mixed $value
      */
-    public function setQuery($key, $value)
+    public function setQuery($key, $value): void
     {
         $this->queries[$key] = $value;
     }
@@ -1228,9 +1233,9 @@ class RouteOne
     /**
      * It returns the current name of the controller.
      *
-     * @return string
+     * @return string|null
      */
-    public function getController()
+    public function getController(): ?string
     {
         return $this->controller;
     }
@@ -1241,7 +1246,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setController($controller)
+    public function setController($controller): RouteOne
     {
         if (is_array($this->whitelist['controller'])) { // there is a whitelist
             if (in_array(strtolower($controller), $this->whitelistLower['controller'], true)) {
@@ -1261,9 +1266,9 @@ class RouteOne
     /**
      *
      *
-     * @return string
+     * @return string|null
      */
-    public function getAction()
+    public function getAction(): ?string
     {
         return $this->action;
     }
@@ -1275,7 +1280,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setAction($action)
+    public function setAction($action): RouteOne
     {
         $this->action = $action;
         return $this;
@@ -1287,7 +1292,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
@@ -1299,7 +1304,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setId($id)
+    public function setId($id): RouteOne
     {
         $this->id = $id;
         return $this;
@@ -1310,7 +1315,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getEvent()
+    public function getEvent(): string
     {
         return $this->event;
     }
@@ -1322,7 +1327,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setEvent($event)
+    public function setEvent($event): RouteOne
     {
         $this->event = $event;
         return $this;
@@ -1331,9 +1336,9 @@ class RouteOne
     /**
      *
      *
-     * @return string
+     * @return string|null
      */
-    public function getIdparent()
+    public function getIdparent(): ?string
     {
         return $this->idparent;
     }
@@ -1343,7 +1348,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setIdParent($idParent)
+    public function setIdParent($idParent): RouteOne
     {
         $this->idparent = $idParent;
         return $this;
@@ -1354,7 +1359,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getExtra()
+    public function getExtra(): string
     {
         return $this->extra;
     }
@@ -1364,7 +1369,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setExtra($extra)
+    public function setExtra($extra): RouteOne
     {
         $this->extra = $extra;
         return $this;
@@ -1373,9 +1378,9 @@ class RouteOne
     /**
      * It gets the current category
      *
-     * @return string
+     * @return string|null
      */
-    public function getCategory()
+    public function getCategory(): ?string
     {
         return $this->category;
     }
@@ -1387,7 +1392,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setCategory($category)
+    public function setCategory($category): RouteOne
     {
         if (is_array($this->whitelist['category'])) { // there is a whitelist
             if (in_array(strtolower($category), $this->whitelistLower['category'], true)) {
@@ -1411,7 +1416,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getSubcategory()
+    public function getSubcategory(): string
     {
         return $this->subcategory;
     }
@@ -1421,7 +1426,7 @@ class RouteOne
      *
      * @return string
      */
-    public function getSubsubcategory()
+    public function getSubsubcategory(): string
     {
         return $this->subsubcategory;
     }
@@ -1431,7 +1436,7 @@ class RouteOne
      *
      * @return bool
      */
-    public function isPostBack()
+    public function isPostBack(): bool
     {
         return $this->isPostBack;
     }
@@ -1443,7 +1448,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setIsPostBack($isPostBack)
+    public function setIsPostBack($isPostBack): RouteOne
     {
         $this->isPostBack = $isPostBack;
         return $this;
@@ -1468,7 +1473,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setModuleList($moduleList)
+    public function setModuleList($moduleList): RouteOne
     {
         $this->moduleList = $moduleList;
         return $this;
@@ -1478,9 +1483,9 @@ class RouteOne
      * It gets the current strategy of module.
      *
      * @return string=['none','modulefront','nomodulefront'][$i]
-     * @see \eftec\routeone\RouteOne::setModuleStrategy
+     * @see RouteOne::setModuleStrategy
      */
-    public function getModuleStrategy()
+    public function getModuleStrategy(): string
     {
         return $this->moduleStrategy;
     }
@@ -1499,7 +1504,7 @@ class RouteOne
      *
      * @return RouteOne
      */
-    public function setModuleStrategy($moduleStrategy)
+    public function setModuleStrategy($moduleStrategy): RouteOne
     {
         $this->moduleStrategy = $moduleStrategy;
         return $this;
