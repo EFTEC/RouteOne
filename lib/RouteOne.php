@@ -435,6 +435,13 @@ class RouteOne
         $this->extra = $this->getRequest('_extra');
     }
 
+    /**
+     * @param string $search
+     * @param array|string $replace
+     * @param string $subject
+     * @param int $limit
+     * @return string
+     */
     protected function str_replace_ex($search, $replace, $subject, $limit = 99999): string
     {
         return implode($replace, explode($search, $subject, $limit + 1));
