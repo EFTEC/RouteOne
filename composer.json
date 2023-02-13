@@ -25,6 +25,9 @@
       "/examples"
     ]
   },
+  "bin": [
+    "lib/pdoonecli"
+  ],
   "autoload": {
     "psr-4": {
       "eftec\\routeone\\": "lib/"

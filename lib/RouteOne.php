@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.26 2023-02-16
+ * @version   1.26.1 2023-02-16
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.26';
+    public const VERSION = '1.26.1';
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
     public $argumentName = 'req';
     /** @var string It is the base url.<br> */
@@ -1627,11 +1627,12 @@ class RouteOne
         // we delete and replace the first line.
         return substr($template, strpos($template, "\n") + 1);
     }
+
     /**
-     * @param           $key
-     * @param string    $default  is the defalut value is the parameter is set
-     *                            without value.
-     * @param bool      $set      it is the value returned when the argument is set but there is no value assigned
+     * @param             $key
+     * @param string|null $default is the defalut value is the parameter is set
+     *                             without value.
+     * @param bool        $set     it is the value returned when the argument is set but there is no value assigned
      * @return string
      */
     public static function getParameterCli($key, ?string $default = '', bool $set = true)
