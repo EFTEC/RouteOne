@@ -954,7 +954,7 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 ```
 
 ## Changelog
-* 2023-01-27 1.26.1
+* 2023-01-27 1.26.2
   * edited composer json (bin) 
 * 2023-01-27 1.26
   * callObject() marked as deprecated, however you still could use it.
