@@ -1,4 +1,5 @@
-<?php /** @noinspection PhpUnusedLocalVariableInspection */
+<?php /** @noinspection ForgottenDebugOutputInspection */
+/** @noinspection PhpUnusedLocalVariableInspection */
 
 /** @noinspection HttpUrlsUsage */
 
@@ -164,7 +165,7 @@ class RouterOneTest extends TestCase
         $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';
         $this->ro->fetch();
-        $r=$this->ro->callObject('eftec\tests\%sController');
+        $r=$this->ro->callObjectEx('eftec\tests\{controller}Controller');
         self::assertEquals(null,$r,'no error');
         $r=$this->ro->callObjectEx('eftec\tests\{controller}Controller',true,'{action}Action',null,null
             ,['id']);
@@ -195,7 +196,7 @@ class RouterOneTest extends TestCase
         $this->ro->fetch();
         $falla=false;
         try {
-            $this->ro->callObject('eftec\tests\%sController');
+            $this->ro->callObjectEx('eftec\tests\{controller}Controller');
         } catch(Exception $ex) {
             $falla=true;
         }
@@ -206,11 +207,18 @@ class RouterOneTest extends TestCase
         try {
             $this->ro->callObjectEx('eftec\tests\{controller}Controller');
         } catch(Exception $ex) {
+            var_dump($ex->getMessage());
             $falla=true;
         }
         self::assertEquals(false,$falla);
-
-        // it must fails
+        $falla=false;
+        //try {
+            $this->ro->callObjectEx('eftec\tests\categoRYController',true,'{l_action}Action');
+        /*} catch(Exception $ex) {
+            $falla=true;
+        }*/
+        self::assertEquals(false,$falla);
+        // it must fail
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
         $this->ro->setWhitelist('controller',['aaa']);
@@ -219,7 +227,7 @@ class RouterOneTest extends TestCase
 
         $falla=false;
         try {
-            $this->ro->callObject('eftec\tests\%sController');
+            $this->ro->callObjectEx('eftec\tests\{controller}Controller');
         } catch(Exception $ex) {
             $falla=true;
         }
@@ -251,9 +259,10 @@ class RouterOneTest extends TestCase
         $this->ro->fetch();
         $falla=false;
         try {
-            $this->ro->callObject('eftec\tests\%sController');
+            $this->ro->callObjectEx('eftec\tests\{category}Controller',true,'{subcategory}Action');
         } catch(Exception $ex) {
             $falla=true;
+            var_dump($ex->getMessage());
         }
         self::assertEquals(false,$falla);
         self::assertEquals('categoRY',$this->ro->category);
@@ -300,7 +309,7 @@ class RouterOneTest extends TestCase
         $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';
         $this->ro->fetch();
-        $r=$this->ro->callObject('eftec\tests\%sControllerX',false);
+        $r=$this->ro->callObjectEx('eftec\tests\{controller}ControllerX',false);
         self::assertEquals('Class eftec\tests\categoryControllerX doesn\'t exist',$r);
 
 

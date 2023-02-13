@@ -4,6 +4,7 @@
 
 namespace eftec\tests;
 
+
 use eftec\routeone\RouteOne;
 use Exception;
 use PHPUnit\Framework\TestCase;
@@ -36,7 +37,6 @@ class RouterOneTestPath extends TestCase
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->addPath('{controller}/{id}/{idparent}');
         $this->ro->fetchPath();
-
         $url=$this->ro->alwaysNakedDomain(false,false);
         self::assertEquals('http://example.dom',$url);
 
@@ -47,11 +47,34 @@ class RouterOneTestPath extends TestCase
         $url=$this->ro->alwaysNakedDomain(true,false);
         self::assertEquals('https://example.dom',$url);
     }
+    public function testRoot(): void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->addPath('{controller:base}/{id}/{idparent}','normal');
+        $this->ro->fetchPath();
+        self::assertEquals('base',$this->ro->controller);
+    }
     public function testMisc1(): void
     {
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_SERVER['REQUEST_METHOD']='POST';
         $_GET['req']='module1/controller1/action1';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->addPath('{module}/{controller}/{action}','path1');
+        self::assertEquals('path1', $this->ro->fetchPath());
+        self::assertEquals(true,$this->ro->isPostBack());
+        self::assertEquals('module1',$this->ro->module);
+        self::assertEquals('controller1',$this->ro->controller);
+        self::assertEquals('action1',$this->ro->action);
+        self::assertEquals('POST',$this->ro->verb);
+        unset($_SERVER['REQUEST_METHOD']);
+    }
+    public function testMisc1b(): void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_SERVER['REQUEST_METHOD']='POST';
+        $_GET['req']='module1/controller1/action1/';
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->addPath('{module}/{controller}/{action}','path1');
         self::assertEquals('path1', $this->ro->fetchPath());

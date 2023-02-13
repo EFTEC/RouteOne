@@ -33,11 +33,13 @@ echo '<b>It could show an error. It is expected (if the path is incorrect of the
 //$route->addPath('BaseUrl/{controller}/{action:index}/{id:123}');
 $route->addPath('BaseUrl/{controller}/{action:index}/{id:123}/{idparent}');
 $found=$route->fetchPath();
-if(!$found) {
+if($found===null) {
     die("Current url does not matches any path ".json_encode($route->lastError));
+} else {
+    echo "path $found<br>";
 }
 
-$route->callObject();
+$route->callObjectEx();
 echo '<hr>';
 
 echo "<img src='{$route->getCurrentUrl()}/img/indianhead.jpg' width='128' height='100'/>";

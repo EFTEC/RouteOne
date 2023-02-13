@@ -954,8 +954,13 @@ $route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserCo
 ```
 
 ## Changelog
-
-* 2023-01-26
+* 2023-01-27 1.26
+  * callObject() marked as deprecated, however you still could use it.
+  * arguments of function now uses type hinting/validation
+  * addPath() now throws an exception if the path is empty or null.
+  * new method redirect()
+  * new CLI. 
+* 2023-01-26 1.25
   * some cleanups 
 * 2022-03-11 1.24
   * **[fix]** fix many problems when the url is null.
