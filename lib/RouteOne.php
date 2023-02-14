@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.26.2 2023-02-16
+ * @version   1.26.4 2023-02-16
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.26.1';
+    public const VERSION = '1.26.4';
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
     public $argumentName = 'req';
     /** @var string It is the base url.<br> */
@@ -66,6 +66,10 @@ class RouteOne
      * @var string|null it stores the current path (name) calculated by fetchPath() or null if no path is set.
      */
     public $currentPath;
+
+    /** @var array  */
+    public $pathName = [];
+    /** @var array  */
     public $path = [];
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
@@ -109,7 +113,7 @@ class RouteOne
      * <li><b>modulefront:</b>if the path uses a module then the <b>type</b> is <b>front</b>. If it doesn't use a module
      * then it is a <b>controller, api or ws</b></li>
      * <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is <b>controller, api or ws</b>.
-     * If it doens't use module then it is <b>front</b></li>
+     * If it doesn't use module then it is <b>front</b></li>
      * </ul>
      * @var string=['none','modulefront','nomodulefront'][$i]
      */
@@ -145,7 +149,7 @@ class RouteOne
      *                                    <b>front</b>. If it doesn't use a module then it is a <b>controller, api or
      *                                    ws</b></li>
      *                                    <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is
-     *                                    <b>controller, api or ws</b>. If it doens't use module then it is
+     *                                    <b>controller, api or ws</b>. If it doesn't use module then it is
      *                                    <b>front</b></li>
      *                                    </ul>
      */
@@ -217,6 +221,7 @@ class RouteOne
     public function clearPath(): void
     {
         $this->path = [];
+        $this->pathName = [];
     }
     // 'controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
     //        , 'subcategory', 'subsubcategory'
@@ -253,10 +258,30 @@ class RouteOne
         if (!$path) {
             throw new RuntimeException('Path must not be empty, use default value to set a root path');
         }
-        if ($name === null) {
-            $this->path[] = $path;
+        $x0=strpos($path,'{');
+        if($x0===false) {
+            $partStr='';
+            $base=$path;
         } else {
-            $this->path[$name] = $path;
+            $base=substr($path,0,$x0);
+            $partStr=substr($path,$x0);
+        }
+        $items=explode('/',$partStr);
+        $itemArr=[];
+        foreach($items as $v) {
+            $p= trim($v, '{}' . " \t\n\r\0\x0B");
+            $itemAdd = explode(':', $p, 2);
+            if(count($itemAdd)===1) {
+                $itemAdd[]=null; // add a default value
+            }
+            $itemArr[]=$itemAdd;
+        }
+        if ($name === null) {
+            $this->pathName[]=$base;
+            $this->path[] = $itemArr;
+        } else {
+            $this->pathName[$name]=$base;
+            $this->path[$name] = $itemArr;
         }
         return $this;
     }
@@ -276,54 +301,35 @@ class RouteOne
         $this->queries = $_GET;
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
         foreach ($this->path as $pnum => $pattern) {
-            $bigs = explode('?', $pattern, 2); // aaa/bbb/{ccc}?dd=2  [/aaa/bbb/{ccc},dd=2]
-            $p0 = $bigs[0]; // aaa/bbb/{ccc}
-            $posBase = strpos($p0, '{');
 
-            if ($posBase === false) {
-                // path does not contain { }
-                $basePath = $p0; // aaa/bbb/ccc
-                $dynPath = '';
-            } else {
-                $basePath = $posBase === 0 ? '' : substr($p0, 0, $posBase-1 ); // aaa/bbb/
-                $dynPath = substr($p0, $posBase); // {ccc}
-            }
-            if ($basePath !== '' && strpos($urlFetchedOriginal ?? '', $basePath) !== 0) {
+            if ($this->pathName[$pnum] !== '' && strpos($urlFetchedOriginal ?? '', $this->pathName[$pnum]) !== 0) {
                 // basePath url does not match.
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
                 continue;
             }
-            $urlFetched = substr($urlFetchedOriginal ?? '', strlen($basePath));
+            $urlFetched = substr($urlFetchedOriginal ?? '', strlen($this->pathName[$pnum]));
             // nginx returns a path as /aaa/bbb apache aaa/bbb
             if ($urlFetched !== '') {
                 $urlFetched = ltrim($urlFetched, '/');
             }
             $path = $this->getExtracted($urlFetched);
-            $partTmps = ($dynPath !== '') ? explode('/', $dynPath) : [];
-            if (count($path) > count($partTmps)) {
 
-                $this->lastError[$pnum] = "Pattern [$pnum] is too big to the current url";
-                continue;
-            }
-
-            foreach ($partTmps as $key => $v) {
-                $p = trim($v, '{}' . " \t\n\r\0\x0B");
-                $tmp = explode(':', $p, 2); // we separate by fieldname:default value
-                if (count($tmp) < 2) {
+            foreach ($this->path[$pnum] as $key => $v) {
+                if ($v[1]===null) {
                     if (!array_key_exists($key, $path) || !isset($path[$key])) {
                         // the field is required but there we don't find any value
-                        $this->lastError[$pnum] = "Pattern [$pnum] required field ($v) not found in url";
+                        $this->lastError[$pnum] = "Pattern [$pnum] required field ($v[0]) not found in url";
                         continue;
                     }
-                    $name = $p;
+                    $name = $v[0];
                     $value = $path[$key];
                 } else {
-                    $name = $tmp[0];
+                    $name = $v[0];
                     if (isset($path[$key]) && $path[$key]) {
                         $value = $path[$key];
                     } else {
                         // value not found, set default value
-                        $value = $tmp[1];
+                        $value = $v[1];
                     }
                 }
                 // 'controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
@@ -986,23 +992,29 @@ class RouteOne
     }
 
     /**
-     * It builds an url using custom values.<br>
-     * If the values are null, then it keeps the current values.
+     * It sets the values of the route using customer values<br>
+     * If the values are null, then it keeps the current values (if any)
      *
-     * @param null $module     Name of the module
-     * @param null $controller Name of the controller.
-     * @param null $action     Name of the action
-     * @param null $id         Name of the id
-     * @param null $idparent   Name of the idparent
-     *
+     * @param null|string $module         Name of the module
+     * @param null|string $controller     Name of the controller.
+     * @param null|string $action         Name of the action
+     * @param null|string $id             Name of the id
+     * @param null|string $idparent       Name of the idparent
+     * @param null|string $category       Value of the category
+     * @param string|null $subcategory    Value of the subcategory
+     * @param string|null $subsubcategory Value of the sub-subcategory
      * @return $this
      */
     public function url(
-        $module = null,
-        $controller = null,
-        $action = null,
-        $id = null,
-        $idparent = null
+        ?string $module = null,
+        ?string $controller = null,
+        ?string $action = null,
+        ?string $id = null,
+        ?string $idparent = null,
+        ?string $category=null,
+        ?string $subcategory=null,
+        ?string $subsubcategory=null
+
     ): self
     {
         if ($module !== null) {
@@ -1019,6 +1031,15 @@ class RouteOne
         }
         if ($idparent !== null) {
             $this->id = $idparent;
+        }
+        if ($category !== null) {
+            $this->category = $category;
+        }
+        if ($subcategory !== null) {
+            $this->subcategory = $subcategory;
+        }
+        if ($subsubcategory !== null) {
+            $this->subsubcategory = $subsubcategory;
         }
         $this->extra = null;
         $this->event = null;
@@ -1116,10 +1137,15 @@ class RouteOne
     }
 
     /**
-     * It reconstructsan url using the current information.<br>
-     * <b>Note:<b>. It discards any information outside the type
-     * (/controller/action/id/idparent/<cutcontent>?arg=1&arg=2)
-     *
+     * It reconstructs an url using the current information.<br>
+     * <b>Example:</b><br>
+     * <pre>
+     * $currenturl=$this->getUrl();
+     * $buildurl=$this->url('mod','controller','action',20)->getUrl();
+     * </pre>
+     * <b>Note:</b>. It discards any information outside the values pre-defined
+     * (example: /controller/action/id/idparent/<cutcontent>?arg=1&arg=2)<br>
+     * It does not consider the path() structure but the type of url.
      * @param string $extraQuery   If we want to add extra queries
      * @param bool   $includeQuery If true then it includes the queries in $this->queries
      *
@@ -1175,6 +1201,31 @@ class RouteOne
             $url .= $sepQuery . http_build_query($this->queries);
         }
         return $url;
+    }
+
+    /**
+     * Returns the url using the path and current values<br>
+     * The trail "/" is always removed.
+     * @param string|null $idPath If null then it uses the current path obtained by fetchUrl()<br>
+     *                            If not null, then it uses the id path to obtain the path.
+     * @return string
+     */
+    public function getUrlPath(?string $idPath=null):string
+    {
+        $idPath=$idPath??$this->currentPath;
+        if(!isset($this->path[$idPath])) {
+            throw new RuntimeException("Path $idPath not defined");
+        }
+        $patternItems=$this->path[$idPath];
+        $url=$this->base.'/'.$this->pathName[$idPath];
+        $final=[];
+        foreach($patternItems as $vArr) {
+            [$idx,$def]=$vArr;
+            $value=$this->{$idx}??$def;
+            $final[]=$value;
+        }
+        $url.=implode('/',$final);
+        return rtrim($url,'/');
     }
 
     /**
@@ -1550,7 +1601,7 @@ class RouteOne
      * <li><b>modulefront:</b>if the path uses a module then the <b>type</b> is <b>front</b>. If it doesn't use a module
      * then it is a <b>controller, api or ws</b></li>
      * <li><b>nomodulefront:</b>if the path uses a module then the <b>type</b> is <b>controller, api or ws</b>.
-     * If it doens't use module then it is <b>front</b></li>
+     * If it doesn't use module then it is <b>front</b></li>
      * </ul>
      * @param string $moduleStrategy
      *
@@ -1629,13 +1680,13 @@ class RouteOne
     }
 
     /**
-     * @param             $key
-     * @param string|null $default is the defalut value is the parameter is set
+     * @param string $key the name of the flag to read
+     * @param string|null $default is the default value is the parameter is set
      *                             without value.
      * @param bool        $set     it is the value returned when the argument is set but there is no value assigned
      * @return string
      */
-    public static function getParameterCli($key, ?string $default = '', bool $set = true)
+    public static function getParameterCli(string $key, ?string $default = '', bool $set = true)
     {
         global $argv;
         $p = array_search('-' . $key, $argv, true);

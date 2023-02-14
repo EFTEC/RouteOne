@@ -47,6 +47,21 @@ class RouterOneTestPath extends TestCase
         $url=$this->ro->alwaysNakedDomain(true,false);
         self::assertEquals('https://example.dom',$url);
     }
+    public function testAddPath():void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $this->ro=new RouteOne('http://www.example.dom');
+
+        $this->ro->addPath('{controller:base}/{id}/{idparent}','normal');
+        $this->assertEquals([['controller','base'],['id',null],['idparent',null]],$this->ro->path['normal']);
+
+
+        $this->ro->addPath('base/base2/{controller:base}/{id}/{idparent}','base');
+        $this->assertEquals([['controller','base'],['id',null],['idparent',null]],$this->ro->path['base']);
+        $this->assertEquals('base/base2/',$this->ro->pathName['base']);
+
+
+    }
     public function testRoot(): void
     {
         $_SERVER['HTTP_HOST']='www.example.dom';
@@ -68,6 +83,7 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('controller1',$this->ro->controller);
         self::assertEquals('action1',$this->ro->action);
         self::assertEquals('POST',$this->ro->verb);
+        self::assertEquals('http://www.example.dom/module1/controller1/action1',$this->ro->getUrlPath());
         unset($_SERVER['REQUEST_METHOD']);
     }
     public function testMisc1b(): void
@@ -83,6 +99,7 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('controller1',$this->ro->controller);
         self::assertEquals('action1',$this->ro->action);
         self::assertEquals('POST',$this->ro->verb);
+        self::assertEquals('http://www.example.dom/module1/controller1/action1',$this->ro->getUrlPath());
         unset($_SERVER['REQUEST_METHOD']);
     }
     public function testMisc1NotFound(): void
@@ -113,6 +130,7 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('id', $this->ro->getId());
         self::assertEquals('parentid', $this->ro->getIdparent());
         self::assertEquals('MyController', $this->ro->getController());
+        self::assertEquals('http://www.example.dom/MyController/Action2/id/parentid',$this->ro->getUrlPath());
         $this->ro->callFile(__DIR__ .'/%s.php');
 
         self::assertEquals('http://www.example.dom/dummy.php',$this->ro->getNonRouteUrl('dummy.php'));
@@ -120,6 +138,7 @@ class RouterOneTestPath extends TestCase
         //$this->ro->callObject();
     }
 
+    /** @noinspection UnnecessaryAssertionInspection */
     public function testNoFront(): void
     {
         $_GET['req']='Module/MyController/Action2/id/parentid';
@@ -131,6 +150,7 @@ class RouterOneTestPath extends TestCase
         self::assertNotEmpty($url);
         $this->ro->addPath('{module}/{controller}/{action}/{id}/{idparent}');
         $this->ro->fetchPath();
+        self::assertEquals('http://www.example.dom/Module/MyController/Action2/id/parentid',$this->ro->getUrlPath());
         self::assertEquals('Action2', $this->ro->getAction());
         self::assertEquals(null, $this->ro->getCategory());
         self::assertEquals('id', $this->ro->getId());
@@ -147,6 +167,8 @@ class RouterOneTestPath extends TestCase
         self::assertInstanceOf(RouteOne::class,$this->ro->setIdParent(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setExtra(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setIsPostBack(false));
+        self::assertEquals('http://www.example.dom/Module',$this->ro->getUrlPath());
+
 
 
 
@@ -172,11 +194,12 @@ class RouterOneTestPath extends TestCase
         self::assertEquals(false, $this->ro->isPostBack());
         self::assertInstanceOf(RouteOne::class,$this->ro->setController(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setAction(''));
-        self::assertInstanceOf(RouteOne::class,$this->ro->setId(''));
+        self::assertInstanceOf(RouteOne::class,$this->ro->setId('xxx'));
         self::assertInstanceOf(RouteOne::class,$this->ro->setEvent(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setIdParent(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setExtra(''));
         self::assertInstanceOf(RouteOne::class,$this->ro->setIsPostBack(false));
+        self::assertEquals('http://www.example.dom/Module/MyController/Action2/id/xxx',$this->ro->getUrlPath());
 
     }
     public function testNoChar(): void
@@ -189,6 +212,8 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('aaaaaaAA999',$this->ro->controller);
         self::assertEquals('bbb_',$this->ro->action);
         self::assertEquals('aaaàa aáa..',$this->ro->id);
+        self::assertEquals('http://www.example.dom/aaaaaaAA999/bbb_/aaaàa aáa../2',$this->ro->getUrlPath());
+
 
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_GET['req']='controller2';
@@ -208,6 +233,7 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('cat',$this->ro->category);
         self::assertEquals('subc',$this->ro->subcategory);
         self::assertEquals('subcc',$this->ro->subsubcategory);
+        self::assertEquals('http://www.example.dom/cat/subc/subcc',$this->ro->getUrlPath());
         $this->ro->reset();
 
     }
@@ -252,7 +278,21 @@ class RouterOneTestPath extends TestCase
         self::assertEquals('cat2',$this->ro->category);
         self::assertEquals('subc',$this->ro->subcategory);
         self::assertEquals('subcc',$this->ro->subsubcategory);
+        self::assertEquals('http://www.example.dom/cat2/subc/subcc',$this->ro->getUrlPath());
         $this->ro->reset();
+    }
+    public function testGen(): void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->addPath('mybase/{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2}');
+        $this->ro->addPath('mybase/{action:defaction}/{id:1}/{idparent:2}/{controller:defcontroller}');
+        //$this->ro->fetchPath();
+        self::assertEquals('http://www.example.dom/mybase/cont/a/idparent/2',
+            $this->ro->url(null,'cont','a','id','idparent')->getUrlPath(0));
+        self::assertEquals('http://www.example.dom/mybase/a/idparent/2/cont',
+            $this->ro->url(null,'cont','a','id','idparent')->getUrlPath(1));
     }
 
 }

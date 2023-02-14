@@ -19,5 +19,5 @@
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ route.php?req=$1 [L,QSA]
+    RewriteRule ^(.*)$ route.php?req=$1 [L,QSA]
 </IfModule>
