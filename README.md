@@ -27,20 +27,20 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
     * [**event**](#event)
     * [**Module**](#module)
   * [Getting started](#getting-started)
-    * [1) Create a .htaccess file in the folder root (Apache)](#1--create-a-htaccess-file-in-the-folder-root--apache-)
-    * [Or configure nginx.conf (Nginx) Linux](#or-configure-nginxconf--nginx--linux)
-    * [Or configure nginx.conf (Nginx) Windows](#or-configure-nginxconf--nginx--windows)
-  * [Routes](#routes)
-    * [API route](#api-route)
-    * [WS route](#ws-route)
-    * [Controller route](#controller-route)
-    * [FRONT route](#front-route)
+    * [Using the cli (recommended)](#using-the-cli--recommended-)
+      * [manual installation](#manual-installation)
+      * [1) Create a .htaccess file in the folder root (Apache)](#1--create-a-htaccess-file-in-the-folder-root--apache-)
+      * [Or configure nginx.conf (Nginx) Linux (not tested)](#or-configure-nginxconf--nginx--linux--not-tested-)
+      * [Or configure nginx.conf (Nginx) Windows](#or-configure-nginxconf--nginx--windows)
+  * [Using Paths](#using-paths)
+    * [clearPath()](#clearpath--)
+    * [addPath()](#addpath--)
+    * [fetchPath()](#fetchpath--)
   * [Methods](#methods)
     * [__construct($base='', $forcedType=null, $isModule=false)](#--construct--base---forcedtypenull-ismodulefalse-)
     * [getQuery($key,$valueIfNotFound=null)](#getquery--keyvalueifnotfoundnull-)
     * [setQuery($key,$value)](#setquery--keyvalue-)
     * [fetch](#fetch)
-    * [callObject](#callobject)
     * [callObjectEx](#callobjectex)
     * [callFile($fileStructure='%s.php',$throwOnError=true)](#callfile--filestructuresphp--throwonerrortrue-)
     * [getHeader()](#getheader--)
@@ -55,51 +55,37 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
     * [alwaysWWW($https = false)](#alwayswww--https--false-)
     * [alwaysHTTPS()](#alwayshttps--)
     * [alwaysNakedDomain($https = false)](#alwaysnakeddomain--https--false-)
-  * [Using Paths](#using-paths)
-    * [clearPath()](#clearpath--)
-    * [addPath()](#addpath--)
-    * [fetchPath()](#fetchpath--)
   * [fields](#fields)
   * [Whitelist](#whitelist)
     * [Whitelist input.](#whitelist-input)
-    * [$type](#type)
+  * [CLI](#cli)
   * [Changelog](#changelog)
 <!-- TOC -->
 
 ## Example:
 
-Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into variables:
+Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into variables that 
+could be process or directly calling a method.
 
+route.php
 ```php
-use eftec\routeone\RouteOne;
-$route=new RouteOne('http://somedomain.dom',null,false,true); // base url, type of route (null default), has module (false), fetch values (true)
-echo "our route is:";
-echo $route->controller; // Customer
-echo $route->action; // Update
-echo $route->id; // 2
-    
-// It could also calls a method of a class automatically
-$this->callObjectEx('cocacola\controller\{controller}Controller'); // calling the method "UpdateAction" from 
-                                                  // the class cocacola\controller\CustomerController
-
-// it is our class
-class CustomerController {
-    public function indexAction($id= '',$idparent= '',$event= '') {
-        // calling the method
-    }
-}
-```
-
-Example using path (since 1.20)
-
-```php
-$route=new RouteOne('http://www.example.dom');
-$route->addPath('api/{controller}/{action}/{id}'); // any route
-$route->addPath('{controller}/{id}/{idparent}');
+$route=new RouteOne('http://www.somedomain.dom');
+$route->addPath('api/{controller}/{action}/{id}'); 
+$route->addPath('{controller}/{action}/{id}/{idparent}');
 $route->fetchPath();
 $this->callObjectEx('cocacola\controller\{controller}Controller');
 ```
 
+controller\CustomerController.php class
+```php
+namespace cocacola\controller\;
+class CustomerController {
+   public function updateAction($id=null,$idparent=null,$event=null) {
+      echo "We want to update the customer $id";
+   }
+}
+ 
+```
 
 
 ## What it does?
@@ -165,10 +151,11 @@ is read by the argument **$event**. This variable could be sent via GET or POST.
 
 ### **Module**
 
+> Note: Modules are obtained automatically if you use addPath() and fetchPath(), so you don't need to specify it.
 Now, let's say our system is modular, and we have several customers (internal customers, external, etc.)
 
 ```php
-$route=new RouteOne('.',null,true); // true indicates it is modular 
+$route=new RouteOne('.',null,true); // true indicates it is modular.
 ```
 
 or
@@ -191,18 +178,61 @@ Then, the first ramification is the name of the module (**Internal**) and it cal
 
 ## Getting started
 
-### 1) Create a .htaccess file in the folder root (Apache)
+### Using the cli (recommended)
+
+* Install the library
+
+> composer require eftec/routeone
+
+* Execute the binary in the root folder
+
+Linux:
+
+```shell
+vendor/bin/routeonecli -init  (if the binary does not work, then chage the permission to execution)
+```
+Windows:
+```shell
+.\vendor\bin\routeonecli.bat -init
+```
+
+It will create the file .htaccess and the file route.php and route.php will have a default configuration.
+
+* Edit the file route.php and change the next lines:
+
+```php
+const BASEURL="http://localhost"; // Base url edit this value.
+const BASEWEBNS="eftec\\controller"; // Base namespace (web) edit this value
+const BASEAPINS="eftec\\api"; // Base namespace (api) edit this value
+```
+Later, you can add or edit the code in this file.
+
+#### manual installation
+
+#### 1) Create a .htaccess file in the folder root (Apache)
 
 ```
 <IfModule mod_rewrite.c>
-Options +FollowSymLinks
-RewriteEngine On
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
 
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]
-RewriteRule ^$ router.php?req=$1 [L,QSA]
+    RewriteEngine On
+    DirectoryIndex route.php
 
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ route.php?req=$1 [L,QSA]
 </IfModule>
 ```
 
@@ -210,9 +240,9 @@ RewriteRule ^$ router.php?req=$1 [L,QSA]
 
 
 > The important line is:    
-> RewriteRule ^(.*)$ router.php?req=$1 [L,QSA]   # The router to call.
+> RewriteRule ^(.*)$ route.php?req=$1 [L,QSA]   # The router to call.
 
-### Or configure nginx.conf (Nginx) Linux
+#### Or configure nginx.conf (Nginx) Linux (not tested)
 
 ```
 server {
@@ -254,7 +284,7 @@ server {
 > The important line is:  
 > try_files $uri $uri/ /router.php?req=$document_uri&$query_string;
 
-### Or configure nginx.conf (Nginx) Windows
+#### Or configure nginx.conf (Nginx) Windows
 
 ```
 server {
@@ -313,171 +343,70 @@ $route->callObject('somenamespace\\controller\\%sController'); // where it will 
 
 
 
-## Routes
+## Using Paths
 
-### API route
+Since 1.21, it is possible to use a custom path instead of a pre-defined path. It is the recommended way.
+The other method is still present.
 
-> https://localhost/api/controller/{action}/{id}/{idparent}
+### clearPath()
 
-where 
-* **https://localhost** is the base (it could be changed on the constructor)
-* **api** indicates we are calling an "api". This value could be changed via **$this->setIdentifyType()**
-* **Controller**. It's the controller class to call. 
-* **Action**. It's the action (method) to call
-* **id**. Some unique identifier.
-* **idparent**.  Some unique identifier (of the parent of object)
+Syntax:
 
-```php 
-// router.php https://locahost/api/Customer/Get/1
-$route=new RouteOne(); // Create the RouteOneClass
-$route->fetch(); // fetch all the input values (from the route, get, post and such).
-if ($route->getType()=='api') {
-   var_dump($route->getController()); // Customer
-   var_dump($route->getAction()); // Get
-   var_dump($route->getId()); // 1
-   var_dump($route->getIdparent()); // null
-   $route->callFile("api/%s.php",true); // we call the file Customer.php   
-} 
+>clearPath()
+
+It clears all the paths defined
+
+### addPath()
+
+Syntax:
+
+> addPath($path, $name = null)
+
+It adds a new path.
+
+The path could start with a static location but the rest of the path must be defined by variables (enclosed by {})
+and separated by "/".
+You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}
+The **name** could be obtained using $this->currentPath. If you add a name with the same name, then it is replaced.
+If you don't set a name, then it uses an autonumeric.
+The **name** is also returned when you call $this->fetchPath()
+
+
+Example:
+
+```php
+$this->addPath('{controller}/{id}/{idparent}');
+$this->addPath('myapi/otherfolder/{controller}/{id}/{idparent}');
+$this->addPath('{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2}');
+
+// url: /dummy/10/20 =>(controller: dummy, id=10, idparent=20)
+// url: /myapi/otherfolder/dummy/10/20  =>(controller: dummy, id=10, idparent=20)
 ```
 
-### WS route
+> You can define different paths, however it only uses the first part of the path that matches some URL.
+> 'path/somepath/{id}' will work
+> 'path/{id}/other' will not work
 
-WS is an alternative to API. We could use API/WS or both.  The difference is how is it called (/api/ versus /ws/)
+### fetchPath()
 
-> https://localhost/ws/controller/{action}/{id}/{idparent}
+Syntax:
 
-where 
-* **https://localhost** is the base (it could be changed on the constructor)
-* **ws** indicates we are calling a "ws". This value could be changed via **$this->setIdentifyType()**
-* **Controller**. It's the controller class to call. 
-* **Action**. It's the action (method) to call
-* **id**. Some unique identifier.
-* **idparent**.  Some unique identifier (of the parent of object)
+> fetchPath()
 
-```php 
-// router.php https://locahost/ws/Customer/Get/1
-$route=new RouteOne(); // Create the RouteOne Class
-$route->fetch(); // fetch all the input values (from the route, get, post and such).
-if ($route->getType()=='ws') {
-   var_dump($route->getController()); // Customer
-   var_dump($route->getAction()); // Get
-   var_dump($route->getId()); // 1
-   var_dump($route->getIdparent()); // null
-   $route->callFile("ws/%s.php",true); // we call the file Customer.php   
-} 
-```
+It fetches the path previously defined by addPath, and it returns the name(or number) of the path. If not found, then it returns false
 
-### Controller route
+Example:
 
-Unlikely "api" and "ws" route, the controller route doesn't have a prefix in the route.
-
-> https://localhost/controller/{action}/{id}/{idparent}
-
-where 
-* **https://localhost** is the base (it could be changed on the constructor)
-* **Controller**. It's the controller class to call. 
-* **Action**. It's the action (method) to call
-* **id**. Some unique identifier.
-* **idparent**.  Some unique identifier (of the parent of object)
-
-router.php:
-```php 
-// router.php https://locahost/Customer/Get/1
-$route=new RouteOne(); // Create the RouteOne Class
-$route->fetch(); // fetch all the input values (from the route, get, post and such).
-if ($route->getType()=='controller') {
-   var_dump($route->getController()); // Customer
-   var_dump($route->getAction()); // Get
-   var_dump($route->getId()); // 1
-   var_dump($route->getIdparent()); // null
-   $route->callObject('\\somenamespace\\controller\\%sController'); // we call CustomerController class and we call the method "getAction" / "getActionGet" or "getActionPost"
-} 
-```
-
-file CustomerController.php:
-```php 
-namespace somenamespace\controller;
-class CustomerController {
-    
-    // optional:
-    public function __construct($argument) {
-        
-    }
-    // any action GET or POST
-    public function GetAction($id="",$idparent="",$event="") {
-        // **my code goes here.**
-        // $event (optional) is read from REQUEST or POST
-    }
-    // GET only action (optional)
-    public function GetActionGet($id="",$idparent="",$event="") {
-        // **my code goes here.**
-    }    
-    // POST only action (optional)
-    public function GetActionPOST($id="",$idparent="",$event="") {
-        // **my code goes here.**
-    }        
-}
+```php
+$route=new RouteOne('http://www.example.dom');
+$route->addPath('{controller}/{id}/{idparent}','optionalname');
+// if the url is : http://www.example.dom/customer/1/200 then it will return
+echo $route->fetchPath(); // optionalname
+echo $route->controller; // customer
+echo $route->id; // 1
+echo $route->idparent; // 200
 
 ```
-
-### FRONT route
-
-The front route (for the front-end) is different as other routes. Syntactically it is distributed on category, subcategory and sub-subcategory. 
-
-> This route is not identified automatically, so it must be set in the constructor
-
-> https://localhost/category/{subcategory}/{subsubcategory}/{id}
-
-where 
-* **https://localhost** is the base (it could be changed on the constructor)
-* **category** The category that we are calling.
-* **subcategory**. (optional) The subcategory
-* **subsubcategory**. (optional) The sub-subcategory
-* **id**. Some unique identifier. (**id** is always the last element of the chain, so /category/20, category/subc/20 and /category/subc/subc/20 always returns 20).
-
-Example: (isModule=false)
-
-> http://localhost/Toys/GoodSmileCompany/Nendoroid/Thanos
-
-* **Category** = toys
-* **Subcategory** = GoodSmileCompany
-* **Subsubcategory** = Nendoroid
-* **id** = Thanos
-
-Example: (isModule=true, or moduleList is equals to ['Retail'])
-
-> http://localhost/Retail/Toys/GoodSmileCompany/Nendoroid/Thanos
-
-* **Module** = Retail
-* **Category** = toys
-* **Subcategory** = GoodSmileCompany
-* **Subsubcategory** = Nendoroid
-* **id** = Thanos (**id** is always the last element)
-* **idparent** = (it does not work on frontal)
-
-Example: (isModule=false)
-
-> http://localhost/Toys/GoodSmileCompany/Thanos
-
-* **Category** = toys
-* **Subcategory** = GoodSmileCompany
-* **Subsubcategory** = Thanos
-* **id** = Thanos
-
-
-
-```php 
-// router.php https://locahost/Products/New/123
-$route=new RouteOne('.','front'); // Create the RouteOne Class for the front end.  It is required to indicate the type as "front". Otherwise it will be interpreted as a "controller route".
-$route->fetch(); // fetch all the input values.
-if ($route->getType()=='front') {
-   var_dump($route->getCategory()); // Products
-   var_dump($route->getSubCategory()); // New
-   var_dump($route->getSubSubCategory()); // null
-   var_dump($route->getId()); // 123  
-} 
-```
-
 
 
 ## Methods
@@ -525,30 +454,9 @@ $id=$router->getQuery("id"); // hi
 ### fetch
 
 Sintax:
-> fetch()
+> fetchPath()
 
 Fetch the values from the route, and the values are processed.
-
-### callObject
-
-Sintax:
-> callObject($classStructure='%sController',$throwOnError=true)
-
-Call a method inside an object using the current route.
-
-* **$classStructure**  
-
-     * The first %s (or %1s) is the name of the controller.<br>
-     * The second %s (or %2s) is the name of the module (if any and if ->isModule=true)<br>
-     * Example: namespace/%sClass if the controller=Example then it calls namespace/ExampleClass<br>
-     * Example: namespace/%2s/%1sClass it calls namespace/Module/ExampleClass<br>
-* **throwOnError** if true, and it fails then it throws an error. If false then it only returns the error message.
-
-The name of the method is obtained via the current **action**
-
-1) **{nameaction}Action** exists then it's called.
-2) Otherwise, if $istpostback=false then it calls the method **{nameaction}ActionGet**
-3) Otherwise, if $istpostback=true then it calls the method **{nameaction}ActionPost**
 
 ### callObjectEx
 
@@ -794,92 +702,33 @@ $route->alwaysNakedDomain(true);  // if the domain is http: www.somedomain.dom/u
 
 ```
 
-## Using Paths
-
-Since 1.21, it is possible to use a custom path instead of a pre-defined path.
-
-### clearPath()
-
-Syntax:
-
->clearPath()
-
-It clears all the paths defined
-
-### addPath()
-
-Syntax:
-
-> addPath($path, $name = null)
-
-It adds a new path.
-
-The path could start with a static location but the rest of the path must be defined by variables (enclosed by {}) 
-and separated by "/".
-You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}
-The **name** could be obtained using $this->currentPath. If you add a name with the same name, then it is replaced. 
-If you don't set a name, then it uses an autonumeric.
-The **name** is also returned when you call $this->fetchPath()
-
-
-Example:
-
-```php
-$this->addPath('{controller}/{id}/{idparent}');
-$this->addPath('myapi/otherfolder/{controller}/{id}/{idparent}');
-$this->addPath('{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2}');
-
-// url: /dummy/10/20 =>(controller: dummy, id=10, idparent=20)
-// url: /myapi/otherfolder/dummy/10/20  =>(controller: dummy, id=10, idparent=20)
-```
-
-> You can define different paths, however it only uses the first part of the path that matches some URL.
-> 'path/somepath/{id}' will work
-> 'path/{id}/other' will not work
-
-### fetchPath()
-
-Syntax:
-
-> fetchPath()
-
-It fetches the path previously defined by addPath, and it returns the name(or number) of the path. If not found, then it returns false
-
-Example:
-
-```php
-$route=new RouteOne('http://www.example.dom');
-$route->addPath('{controller}/{id}/{idparent}','optionalname');
-// if the url is : http://www.example.dom/customer/1/200 then it will return
-echo $route->fetchPath(); // optionalname
-echo $route->controller; // customer
-echo $route->id; // 1
-echo $route->idparent; // 200
-
-```
-
-
-
 ## fields
 
-| Field           | Description                                                              | Example                                                                 |
-|-----------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| $argumentName   | The name of the argument used by Apache .Htaccess and nginx              | $this-argumentName='req';                                               |
-| $base           | It is the base url.                                                      | $this->base=0;                                                          |
-| $type           | It is the type of url (api,ws,controller or front)                       | echo $this->type; // api                                                |
-| $module         | It's the current module                                                  | echo $this->module;                                                     |
-| $controller     | It's the controller.                                                     | echo $this->controller;                                                 |
-| $action         | It's the action.                                                         | echo $this->action;                                                     |
-| $id             | It's the identifier                                                      | echo $this->id;                                                         |
-| $event          | It's the event (such as "click on button).                               | echo$this->event;                                                       |
-| $idparent       | It is the current parent id (if any)                                     | echo $this->idparent;                                                   |
-| $extra          | It's the event (such as "click on button)                                | echo $this->extra;                                                      |
-| $category       | The current category. It is useful for the type 'front'                  | echo $this->category;                                                   |
-| $subcategory    | The current sub-category. It is useful for the type 'front'              | echo $this->subcategory;                                                |
-| $subsubcategory | The current sub-sub-category. It is useful for the type  'front'         | echo $this->subsubcategory;                                             |
-| $identify       | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
-| $isPostBack     | its true if the page is POST, otherwise false.                           | if ($this->isPostBack) { ... };                                         |
-| $verb           | The current verb, it could be GET,POST,PUT and DELETE.                   | if ($this->verb) { ... };                                               |
+| Field           | path             | Description                                                              | Example                                                                 |
+|-----------------|------------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| $argumentName   |                  | The name of the argument used by Apache .Htaccess and nginx              | $this-argumentName='req';                                               |
+| $base           |                  | It is the base url.                                                      | $this->base=0;                                                          |
+| $type           |                  | It is the type of url (api,ws,controller or front)                       | echo $this->type; // api                                                |
+| $module         | {module}         | It's the current module                                                  | echo $this->module;                                                     |
+| $controller     | {controller}     | It's the controller.                                                     | echo $this->controller;                                                 |
+| $action         | {action}         | It's the action.                                                         | echo $this->action;                                                     |
+| $id             | {id}             | It's the identifier                                                      | echo $this->id;                                                         |
+| $event          | {event}          | It's the event (such as "click on button).                               | echo$this->event;                                                       |
+| $idparent       | {idparent}       | It is the current parent id (if any)                                     | echo $this->idparent;                                                   |
+| $extra          | {extra}          | It's the event (such as "click on button)                                | echo $this->extra;                                                      |
+| $category       | {category}       | The current category. It is useful for the type 'front'                  | echo $this->category;                                                   |
+| $subcategory    | {subcategory}    | The current sub-category. It is useful for the type 'front'              | echo $this->subcategory;                                                |
+| $subsubcategory | {subsubcategory} | The current sub-sub-category. It is useful for the type  'front'         | echo $this->subsubcategory;                                             |
+| $identify       |                  | It is an associative array that helps to identify the api and  ws route. | $this->identify=['api'=>'apiurl','ws'=>'webservices','controller'=>'']; |
+| $isPostBack     |                  | its true if the page is POST, otherwise false.                           | if ($this->isPostBack) { ... };                                         |
+| $verb           | {verb}           | The current verb, it could be GET,POST,PUT and DELETE.                   | if ($this->verb) { ... };                                               |
+
+Example:
+```php
+$this->addPath('portal/web/{controller}/{action:list}');
+$this->fetchPath();
+var_dump($this-action); // it shows the current action or the default value "list" if none.
+```
 
 ## Whitelist
 
@@ -912,50 +761,20 @@ var_dump($this->controller); // it shows "Customer" instead of "customer"
 var_dump($this->notAllowed); // false (not error with the validation of the whitelist)    
     
 // reset whitelist for controllers
-$this->setWhiteList('controller',null);    
-    
-
+$this->setWhiteList('controller',null);        
 ```
+## CLI
+Routeone contains a basic CLI to create and initialize the configuration.
+The binary **pdoonecli** is located in the vendor/bin folder
 
+![img/img.png](img/img.png)
 
-
-### $type 
-
-it returns the current type of URL used.
-
-> Also obtained via getType()
-
-| type       | url expected                        | description                                                  |
-|------------|-------------------------------------|--------------------------------------------------------------|
-| api        | domain.dom/api/controller/action/id | {module}\api\controller\action\id\{idparent}?_event=event    |
-| ws         | domain.dom/ws/controller/action/id  | {module}\ws\controller\action\id\{idparent}?_event=event     |
-| controller | domain.dom/controller/action/id     | {module}\controller\action\id\{idparent}?_event=event        |
-| front      | domain.dom/cat/subcat/subsubcat/id  | {module}\category\subcategory\subsubcategory\id?_event=event |
-
-Example:
-
-```php 
-$route=new RouteOne('.',null);  // null means automatic type
-$route->fetch(); 
-if($route->type==='api') {
-    $route->callObject('somenamespace\\api\\%sApi');
-} else {
-    $route->callObject('somenamespace\\controller\\%sController');
-}
-```
-
-Example:
-
-```php 
-$route=new RouteOne('.',null,false);  // null means automatic type
-$route->fetch(); 
-
-$route->callObject('somenamespace\\%3s%\\%sController'); // somespace/api/UserController , somespace/controller/UserController, etc.
-```
 
 ## Changelog
+* 2023-02-15 1.27
+  * Cleanup of the code and documentation. Deprecating old methods 
 * 2023-02-14 1.26.4
-  * 
+  * some bug fixed
 * 2023-01-27 1.26.2
   * edited composer json (bin) 
 * 2023-01-27 1.26

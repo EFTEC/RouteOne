@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.26.4 2023-02-16
+ * @version   1.27 2023-02-15
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.26.4';
+    public const VERSION = '1.27';
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
     public $argumentName = 'req';
     /** @var string It is the base url.<br> */
@@ -1030,7 +1030,7 @@ class RouteOne
             $this->id = $id;
         }
         if ($idparent !== null) {
-            $this->id = $idparent;
+            $this->idparent = $idparent;
         }
         if ($category !== null) {
             $this->category = $category;
