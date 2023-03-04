@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.27 2023-02-15
+ * @version   1.27.1 2023-03-04
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.27';
+    public const VERSION = '1.27.1';
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
     public $argumentName = 'req';
     /** @var string It is the base url.<br> */
@@ -230,6 +230,7 @@ class RouteOne
      * <b>Example:</b><br>
      * <pre>
      * $this->addPath('api/{controller}/{action}/{id:0}','apipath');
+     * $this->addPath('/api/{controller}/{action}/{id:0}/','apipath'); // "/" at the beginner and end are trimmed.
      * $this->addPath('{controller}/{action}/{id:0}','webpath');
      * $this->addPath('{controller:root}/{action}/{id:0}','webpath'); // root path using default
      * </pre>
@@ -258,6 +259,7 @@ class RouteOne
         if (!$path) {
             throw new RuntimeException('Path must not be empty, use default value to set a root path');
         }
+        $path=trim($path,'/');
         $x0=strpos($path,'{');
         if($x0===false) {
             $partStr='';

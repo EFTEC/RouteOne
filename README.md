@@ -771,6 +771,8 @@ The binary **pdoonecli** is located in the vendor/bin folder
 
 
 ## Changelog
+* 2023-03-04 1.27.1
+  * Fix a small bug when addPath() add a path that starts with "/". Now, the value is trimmed. 
 * 2023-02-15 1.27
   * Cleanup of the code and documentation. Deprecating old methods 
 * 2023-02-14 1.26.4
