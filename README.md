@@ -1,5 +1,5 @@
 # RouteOne
-It reads the URL route and parses the values of path, so it could be interpreted manually or automatically in the fastest way possible (for example, to implement an MVC system).  
+It reads the URL route and parses the values of path, so it could be interpreted manually or automatically in the fastest way possible (for example, to implement an MVC system).
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
@@ -64,7 +64,7 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
 
 ## Example:
 
-Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into variables that 
+Let's say we have the next URL http://somedomain.dom/Customer/Update/2 This library converts this URL into variables that
 could be process or directly calling a method.
 
 route.php
@@ -130,7 +130,7 @@ class Customer {
 
 Let's se we want to **Update** a **Customer** number **20**, then we could call the next page
 
-> http://somedomain.com/Customer/Update/20 
+> http://somedomain.com/Customer/Update/20
 
 where 20 is the "$id" of the customer to edit (it could be a number of a string)
 
@@ -140,11 +140,11 @@ And what if we want to **Update** a **Customer** number **20** of the business *
 
 > http://somedomain.com/Customer/Update/20/APPL
 
-Where APPL is the **idparent** 
+Where APPL is the **idparent**
 
 ### **event**
 
-Now, let's say we click on some button, or we do some action.  It could be captured by the field **_event**, and it 
+Now, let's say we click on some button, or we do some action.  It could be captured by the field **_event**, and it
 is read by the argument **$event**. This variable could be sent via GET or POST.
 
 > http://somedomain.com/Customer/Update/20/APPL?_event=click
@@ -236,7 +236,7 @@ Later, you can add or edit the code in this file.
 </IfModule>
 ```
 
-> If your web host doesn't allow the FollowSymlinks option, try replacing it with Options +SymLinksIfOwnerMatch.   
+> If your web host doesn't allow the FollowSymlinks option, try replacing it with Options +SymLinksIfOwnerMatch.
 
 
 > The important line is:    
@@ -415,15 +415,15 @@ echo $route->idparent; // 200
 
 * string $base base url
 * string $forcedType=['api','ws','controller','front']\[$i]<br>
-    <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
-    <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
-    <b>controller</b> then it expects a path as controller/action/id/idparent<br>
-    <b>front</b> then it expects a path as /category/subcategory/subsubcategory/id<br>
+  <b>api</b> then it expects a path as api/controller/action/id/idparent<br>
+  <b>ws</b> then it expects a path as ws/controller/action/id/idparent<br>
+  <b>controller</b> then it expects a path as controller/action/id/idparent<br>
+  <b>front</b> then it expects a path as /category/subcategory/subsubcategory/id<br>
 * bool   $isModule if true then the route start reading a module name<br>
-    <b>false</b> controller/action/id/idparent<br>
-    <b>true</b> module/controller/action/id/idparent<br>       
-    <b>array</b> if the value is an array then the value is determined if the first part of the path is in the array.<br>
-     Example ['modulefolder1','modulefolder2']<br>
+  <b>false</b> controller/action/id/idparent<br>
+  <b>true</b> module/controller/action/id/idparent<br>       
+  <b>array</b> if the value is an array then the value is determined if the first part of the path is in the array.<br>
+  Example ['modulefolder1','modulefolder2']<br>
 
 ### getQuery($key,$valueIfNotFound=null)
 
@@ -480,7 +480,7 @@ This method uses {} to replace values based in the next variables:<br>
 | {subcategory}    | The current subcategory                            |
 | {subsubcategory} | The current subsubcategory                         |
 
-<b>Example:</b> 
+<b>Example:</b>
 
 ```php
 // controller example http://somedomain/Customer/Insert/23
@@ -518,7 +518,7 @@ $route->callObjectEx('cocacola\controller\{controller}Controller' // the class t
 
 ```
 
-Controller:    
+Controller:
 
 ```php
 namespace cocacola\controller;
@@ -628,7 +628,7 @@ $route->getCurrentServer(); // http://somedomain
 
 It sets the current server name.  It is used by getCurrentUrl() and getCurrentServer().    
 **Note:** If $this->setCurrentServer() is not set, then it uses $_SERVER['SERVER_NAME'], and it could be modified
- by the user.
+by the user.
 
 ```php 
 $route->setCurrentServer('localhost'); 
@@ -662,11 +662,11 @@ It builds an url (front) based in custom values
 $route->url(null,"Daily","Milk",20); // Daily/Milk/20
 ```
 
-### alwaysWWW($https = false) 
+### alwaysWWW($https = false)
 
 If the subdomain is empty or different to www, then it redirect to www.domain.com.<br>
 <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-<b>Note: If this code needs to redirect, then it stops the execution of the code. Usually it must be called at the 
+<b>Note: If this code needs to redirect, then it stops the execution of the code. Usually it must be called at the
 top of the code</b>
 
 ```php 
@@ -675,11 +675,11 @@ $route->alwaysWWW(true);  // if the domain is http: somedomain.dom/url, then it 
 
 ```
 
-### alwaysHTTPS() 
+### alwaysHTTPS()
 
 If the page is loaded as http, then it redirects to https.    
 <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>
-<b>Note: If this code needs to redirect, then it stops the execution of the code. Usually it must be called at 
+<b>Note: If this code needs to redirect, then it stops the execution of the code. Usually it must be called at
 the top of the code</b>
 
 ```php 
@@ -689,12 +689,12 @@ $route->alwaysHTTPS(); // http://127.0.0.1 ---> // http://127.0.0.1
 $route->alwaysHTTPS(); // http://mypc ---> // http://mypc
 ```
 
-### alwaysNakedDomain($https = false) 
+### alwaysNakedDomain($https = false)
 
 If the subdomain is www (example www.domain.dom) then it redirect to a naked domain domain.dom<br>   
 <b>Note: It doesn't work with localhost, domain without TLD (netbios) or ip domains. It is on purpose.</b><br>  
 <b>Note: If this code needs to redirect, then it stops the execution of the code. Usually,
-it must be called at the top of the code</b>   
+it must be called at the top of the code</b>
 
 ```php 
 $route->alwaysNakedDomain();  // if the domain is www.somedomain.dom/url, then it redirects to somedomain.dom/url
@@ -771,26 +771,32 @@ The binary **pdoonecli** is located in the vendor/bin folder
 
 
 ## Changelog
+* 2023-03-04 1.28
+  * Added static paths to addPath()
+  * callObjectEx() now allows any parameter. If the parameter is not a defined value, then it is obtained from the route.
+  * callObjectEx() now allows named parameter.
+  * callObjectEx() now allows to pass an instance and callable instead of the name of the class.
+  * callObjectEx() allows to filter by type of Path. By default, it does not filter value
 * 2023-03-04 1.27.1
-  * Fix a small bug when addPath() add a path that starts with "/". Now, the value is trimmed. 
+  * Fix a small bug when addPath() add a path that starts with "/". Now, the value is trimmed.
 * 2023-02-15 1.27
-  * Cleanup of the code and documentation. Deprecating old methods 
+  * Cleanup of the code and documentation. Deprecating old methods
 * 2023-02-14 1.26.4
   * some bug fixed
 * 2023-01-27 1.26.2
-  * edited composer json (bin) 
+  * edited composer json (bin)
 * 2023-01-27 1.26
   * callObject() marked as deprecated, however you still could use it.
   * arguments of function now uses type hinting/validation
   * addPath() now throws an exception if the path is empty or null.
   * new method redirect()
-  * new CLI. 
+  * new CLI.
 * 2023-01-26 1.25
-  * some cleanups 
+  * some cleanups
 * 2022-03-11 1.24
   * **[fix]** fix many problems when the url is null.
 * 2022-02-01 1.23
-  * [new] getRequest(), getPost(),getGet() 
+  * [new] getRequest(), getPost(),getGet()
 * 2022-01-27 1.22
   * [new] callObjectEx allows adding arguments to the constructor.
   * [new] clearPath()
@@ -799,66 +805,66 @@ The binary **pdoonecli** is located in the vendor/bin folder
   * [new] getHeader()
   * [new] getBody()
 * 2021-04-24 1.20
-   * **constructor** Now it is possible to indicates the possible modules in the constructor.
-   * Many cleanups of the code.
-   *  New field called **$moduleList** including its setter and getters (by default this value is null)
-   *  If **$moduleList** is not null then it is used to determine if the URL is a module or not
-   *  New field called **$moduleStrategy** assigned in the constructor and in the setter and getters (by default this value is 'none')
+  * **constructor** Now it is possible to indicates the possible modules in the constructor.
+  * Many cleanups of the code.
+  *  New field called **$moduleList** including its setter and getters (by default this value is null)
+  *  If **$moduleList** is not null then it is used to determine if the URL is a module or not
+  *  New field called **$moduleStrategy** assigned in the constructor and in the setter and getters (by default this value is 'none')
 * 2021-02-26 1.19
-   * **setWhiteList()** now works with **controller** and **category**
-   * **setWhiteList()** also works to define the correct proper case of the elements.
-   * The method **callObjectEx()** allows to define the case. 
+  * **setWhiteList()** now works with **controller** and **category**
+  * **setWhiteList()** also works to define the correct proper case of the elements.
+  * The method **callObjectEx()** allows to define the case.
 * 2021-02-26 1.18
-   * new fields **$verb** (it gets the current verb, example GET, POST, etc.)
-   * new whitelist elements:
-     * $allowedVerbs The list of allowed verbs.
-     * $allowedFields The list of allowed fields used by **callObjectEx()**
-     * $allowedControllers The list of allowed controllers. If this list is set and the controller is not in the whitelist
-       , then the controller is set as null
-   * The method **callObjectEx()** allows to use the verb. The verb is always ucfirst.
-     * Example $this->callObjectEx('cocacola\controller\{controller}Controller','{action}Action{verb}');
+  * new fields **$verb** (it gets the current verb, example GET, POST, etc.)
+  * new whitelist elements:
+    * $allowedVerbs The list of allowed verbs.
+    * $allowedFields The list of allowed fields used by **callObjectEx()**
+    * $allowedControllers The list of allowed controllers. If this list is set and the controller is not in the whitelist
+      , then the controller is set as null
+  * The method **callObjectEx()** allows to use the verb. The verb is always ucfirst.
+    * Example $this->callObjectEx('cocacola\controller\{controller}Controller','{action}Action{verb}');
 * 2021-02-16 1.17
-   * removed all @ and replaced by **isset()**. Since this library is compatible with PHP 5.6, then it doesn't use "??" 
-     operators.
-   * **setDefaultValues()** trigger an error if it is called after fetch()
+  * removed all @ and replaced by **isset()**. Since this library is compatible with PHP 5.6, then it doesn't use "??"
+    operators.
+  * **setDefaultValues()** trigger an error if it is called after fetch()
 * 2021-02.11 1.16.1
-    * fixed a problem with "api" and "ws" that it doesn't read the controller in the right position.  
+  * fixed a problem with "api" and "ws" that it doesn't read the controller in the right position.
 * 2021-02-11 1.16
-    * Removed Travis.
-    * Lowered the requirement. Now, this library works in PHP 5.6 and higher (instead of PHP 7.0 and higher)
-    * Constructor has a new argument, it could fetch() the values
-    * alwaysHTTPS() has a new argument that it could return the full URL (if it requires redirect) or null
-    * alwaysWWW() has a new argument that it could return the full URL (if it requires redirect) or null
-    * alwaysNakedDomain() has a new argument that it could return the full URL (if it requires redirect) or null
+  * Removed Travis.
+  * Lowered the requirement. Now, this library works in PHP 5.6 and higher (instead of PHP 7.0 and higher)
+  * Constructor has a new argument, it could fetch() the values
+  * alwaysHTTPS() has a new argument that it could return the full URL (if it requires redirect) or null
+  * alwaysWWW() has a new argument that it could return the full URL (if it requires redirect) or null
+  * alwaysNakedDomain() has a new argument that it could return the full URL (if it requires redirect) or null
 * 2020-06-14 1.15
-    * Added default values in setDefaultValues().     
-    * Method fetch() now it unset the value.    
-    * Fixed Method url().  
+  * Added default values in setDefaultValues().
+  * Method fetch() now it unset the value.
+  * Fixed Method url().
 * 2020-06-07 1.14.2
-    * Bug fixed: Delete an echo (used for debug)
+  * Bug fixed: Delete an echo (used for debug)
 * 2020-06-07 1.14.1
-    * Solved a small bug. it keeps the compatibility.   
+  * Solved a small bug. it keeps the compatibility.
 * 2020-06-07 1.14
-    * added defcategory,defsubcategory and defsubsubcategory
-    * new method setIdentifyType()
+  * added defcategory,defsubcategory and defsubsubcategory
+  * new method setIdentifyType()
 * 2020-04-23 1.13
-    * Lots of cleanups. 
-* 2020-04-04 1.12 
-    * added support for nginx.
-    * updated the documentation for .htaccess
-    * new method setCurrentServer()
+  * Lots of cleanups.
+* 2020-04-04 1.12
+  * added support for nginx.
+  * updated the documentation for .htaccess
+  * new method setCurrentServer()
 * 2020-03-27 1.11
-    * added alwaysNakedDomain()
+  * added alwaysNakedDomain()
 * 2020-03-27 1.10.1
-    * a small fix for alwaysHTTPS() 
+  * a small fix for alwaysHTTPS()
 * 2020-03-27 1.10
-    * added method alwaysHTTPS() and alwaysWWW()
+  * added method alwaysHTTPS() and alwaysWWW()
 * 2020-02-15 1.9
-    * added new arguments to callObject()
-    * new method callObjectEx()
+  * added new arguments to callObject()
+  * new method callObjectEx()
 * 2020-02-03 1.8
-    * new method getNonRouteUrl()
-    * new method setExtra()
-    * new method isPostBack()
-    * new method setIsPostBack()
-    * Some fixes for getUrl() 
+  * new method getNonRouteUrl()
+  * new method setExtra()
+  * new method isPostBack()
+  * new method setIsPostBack()
+  * Some fixes for getUrl() 

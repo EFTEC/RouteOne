@@ -1,4 +1,5 @@
-<?php /** @noinspection ForgottenDebugOutputInspection */
+<?php /** @noinspection PhpUnhandledExceptionInspection */
+/** @noinspection ForgottenDebugOutputInspection */
 /** @noinspection PhpUnusedLocalVariableInspection */
 
 /** @noinspection HttpUrlsUsage */
@@ -8,6 +9,8 @@ namespace eftec\tests;
 use eftec\routeone\RouteOne;
 use Exception;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+
 class categoRYController {
     /** @noinspection PhpUnused */
     public function actiontestAction($id, $idparent='', $event=''): void
@@ -154,6 +157,26 @@ class RouterOneTest extends TestCase
 
         //$this->ro->callObject();
     }
+    public function testCallCallable():void
+    {
+        $_GET=[];
+        $_POST['idpost']='idpost';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->setCurrentServer('www.example.dom');
+        $_GET['req']='category/actiontest/id/parentid';
+        $this->ro->fetch();
+        $r=$this->ro->callObjectEx(
+            function($id,$idpost,$missing) {
+                if($id!=='id' || $idpost!=='idpost' || $missing!=='notfound') {
+                    throw new RuntimeException('no id');
+                }
+                },true,'{action}Action','{action}Action{verb}','{action}Action{verb}',['id','post:idpost','post:missing:notfound']);
+        self::assertEquals(null,$r,'no error');
+
+        $instance=new categoRYController();
+        $r=$this->ro->callObjectEx($instance);
+        self::assertEquals(null,$r,'no error');
+    }
 
     /**
      * @throws Exception
@@ -161,6 +184,8 @@ class RouterOneTest extends TestCase
     public function testCall(): void
     {
 
+        $_GET=[];
+        $_POST=[];
         $this->ro=new RouteOne('http://www.example.dom');
         $this->ro->setCurrentServer('www.example.dom');
         $_GET['req']='category/actiontest/id/parentid';

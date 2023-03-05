@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.27.1 2023-03-04
+ * @version   1.28 2023-03-04
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.27.1';
+    public const VERSION = '1.28';
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
     public $argumentName = 'req';
     /** @var string It is the base url.<br> */
@@ -66,10 +66,9 @@ class RouteOne
      * @var string|null it stores the current path (name) calculated by fetchPath() or null if no path is set.
      */
     public $currentPath;
-
-    /** @var array  */
+    /** @var array */
     public $pathName = [];
-    /** @var array  */
+    /** @var array */
     public $path = [];
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
     public $queries = [];
@@ -259,30 +258,30 @@ class RouteOne
         if (!$path) {
             throw new RuntimeException('Path must not be empty, use default value to set a root path');
         }
-        $path=trim($path,'/');
-        $x0=strpos($path,'{');
-        if($x0===false) {
-            $partStr='';
-            $base=$path;
+        $path = trim($path, '/');
+        $x0 = strpos($path, '{');
+        if ($x0 === false) {
+            $partStr = '';
+            $base = $path;
         } else {
-            $base=substr($path,0,$x0);
-            $partStr=substr($path,$x0);
+            $base = substr($path, 0, $x0);
+            $partStr = substr($path, $x0);
         }
-        $items=explode('/',$partStr);
-        $itemArr=[];
-        foreach($items as $v) {
-            $p= trim($v, '{}' . " \t\n\r\0\x0B");
+        $items = explode('/', $partStr);
+        $itemArr = [];
+        foreach ($items as $v) {
+            $p = trim($v, '{}' . " \t\n\r\0\x0B");
             $itemAdd = explode(':', $p, 2);
-            if(count($itemAdd)===1) {
-                $itemAdd[]=null; // add a default value
+            if (count($itemAdd) === 1) {
+                $itemAdd[] = null; // add a default value
             }
-            $itemArr[]=$itemAdd;
+            $itemArr[] = $itemAdd;
         }
         if ($name === null) {
-            $this->pathName[]=$base;
+            $this->pathName[] = $base;
             $this->path[] = $itemArr;
         } else {
-            $this->pathName[$name]=$base;
+            $this->pathName[$name] = $base;
             $this->path[$name] = $itemArr;
         }
         return $this;
@@ -303,7 +302,6 @@ class RouteOne
         $this->queries = $_GET;
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
         foreach ($this->path as $pnum => $pattern) {
-
             if ($this->pathName[$pnum] !== '' && strpos($urlFetchedOriginal ?? '', $this->pathName[$pnum]) !== 0) {
                 // basePath url does not match.
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
@@ -315,9 +313,8 @@ class RouteOne
                 $urlFetched = ltrim($urlFetched, '/');
             }
             $path = $this->getExtracted($urlFetched);
-
             foreach ($this->path[$pnum] as $key => $v) {
-                if ($v[1]===null) {
+                if ($v[1] === null) {
                     if (!array_key_exists($key, $path) || !isset($path[$key])) {
                         // the field is required but there we don't find any value
                         $this->lastError[$pnum] = "Pattern [$pnum] required field ($v[0]) not found in url";
@@ -361,17 +358,17 @@ class RouteOne
                     case 'subsubcategory':
                         $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
                         break;
+                    case '':
+                        break;
                     default:
-                        throw new RuntimeException('pattern incorrect [$name:$value]');
+                        throw new RuntimeException("pattern incorrect [$name:$value]");
                 }
             }
-
             $this->event = $this->getRequest('_event');
             $this->extra = $this->getRequest('_extra');
             $this->currentPath = $pnum;
             break;
         }
-
         return $this->currentPath;
     }
 
@@ -485,7 +482,6 @@ class RouteOne
         return implode($replace, explode($search, $subject, $limit + 1));
     }
 
-
     /**
      * It is an associative array with the allowed paths or null (default behaviour) to allows any path.<br>
      * The comparison ignores cases but the usage is "case-sensitive" and it uses the case used here<br>
@@ -535,7 +531,7 @@ class RouteOne
             if ($redirect) {
                 header('HTTP/1.1 301 Moved Permanently');
                 header('Location: ' . $location);
-                if(http_response_code()) {
+                if (http_response_code()) {
                     die(1);
                 }
             }
@@ -587,7 +583,7 @@ class RouteOne
             if ($redirect) {
                 header('HTTP/1.1 301 Moved Permanently');
                 header('Location: ' . $location);
-                if(http_response_code()) {
+                if (http_response_code()) {
                     die(1);
                 }
             }
@@ -617,7 +613,7 @@ class RouteOne
             if ($redirect) {
                 header('HTTP/1.1 301 Moved Permanently');
                 header('Location: ' . $location);
-                if(http_response_code()) {
+                if (http_response_code()) {
                     die(1);
                 }
                 return '';
@@ -745,6 +741,44 @@ class RouteOne
     }
 
     /**
+     * Get multiples values, get, post, request, header, etc.
+     * @param string     $key          The name of the key to read.<br>
+     *                                 Body and verb do not use a key.
+     * @param string     $type         =['get','post','request','header','body','verb'][$i]
+     * @param mixed|null $defaultValue the default value if the value is not found.<br>
+     *                                 It is ignored by body and verb because both always returns a value
+     * @return false|mixed|string|null
+     * @throws RuntimeException
+     */
+    public function getMultiple(string $key, string $type, $defaultValue = null)
+    {
+        switch ($type) {
+            case 'get':
+                $r = $this->getQuery($key, $defaultValue);
+                break;
+            case 'post':
+                $r = $this->getPost($key, $defaultValue);
+                break;
+            case 'request':
+                $r = $this->getRequest($key, $defaultValue);
+                break;
+            case 'header':
+                $r = $this->getHeader($key, $defaultValue);
+                break;
+            case 'body':
+                $r = $this->getBody(true);
+                $r = $r === false ? $defaultValue : $r;
+                break;
+            case 'verb':
+                $r = $this->verb;
+                break;
+            default:
+                throw new RuntimeException("argument incorrect, type [$type] unknown");
+        }
+        return $r;
+    }
+
+    /**
      * It creates and object (for example, a Controller object) and calls the method.<br>
      * Note: It is an advanced version of this::callObject()<br>
      * This method uses {} to replace values.<br>
@@ -772,59 +806,117 @@ class RouteOne
      * <li><b>{u_*tag*}</b> uppercase</li>
      * <li><b>{l_*tag*}</b> lowercase</li>
      * </ul>
-     * <b>Example:</b>
+     * <b>Example:</b><br>
      * <pre>
      * // controller example http://somedomain/Customer/Insert/23
-     * $this->callObjectEx('cocacola\controller\{controller}Controller');
-     * // it calls the method cocacola\controller\Customer::InsertAction(23,'','');
+     * $this->callObjectEx('cola\controller\{controller}Controller');
+     * // it calls the method cola\controller\Customer::InsertAction(23,'','');
      *
-     * $this->callObjectEx('cocacola\controller\{controller}Controller','{action}Action{verb}');
-     * // it calls the method cocacola\controller\Customer::InsertActionGet(23,'',''); or InsertActionPost, etc.
+     * $this->callObjectEx('cola\controller\{controller}Controller','{action}Action{verb}');
+     * // it calls the method cola\controller\Customer::InsertActionGet(23,'',''); or InsertActionPost, etc.
      *
      * // front example: http://somedomain/product/coffee/nescafe/1
      * $this->callObjectEx('cocacola\controller\{category}Controller',false,'{subcategory}',null,null,['subsubcategory','id']);
      * // it calls the method cocacola\controller\product::coffee('nescafe','1');
      * </pre>
      *
-     * @param string|null $classStructure  [optional] Default value='{controller}Controller'.<br>
+     * @param string|object|callable       $classStructure  [optional] Default value='{controller}Controller'.<br>
      *                                     If the class contains a namespace, then it must includes it:<br>
-     *                                     "namespace\subnamespace\{controller}Controller"
+     *                                     "namespace\subnamespace\{controller}Controller"<br>
+     *                                     SomeClassController::class you can use a fixed classname<br>
+     *                                     if $classStructure is an object, then it uses as an instance.<br>
      * @param bool        $throwOnError    [optional] Default:true,  if true then it throws an exception. If false then
      *                                     it returns the error as a string (if any)
      * @param string|null $method          [optional] Default value='{action}Action'. The name of the method to call
-     *                                     (get/post). If method does not exist then it will use $methodGet or
-     *                                     $methodPost
+     *                                     (get/post). If the method does not exist then it will use $methodGet
+     *                                     (isPostBack=false) or $methodPost (isPostBack=true)
      * @param string|null $methodGet       [optional] Default value='{action}Action{verb}'. The name of the method to
-     *                                     call
+     *                                     call when get
      *                                     (get) but only if the method defined by $method is not defined.
      * @param string|null $methodPost      [optional] Default value='{action}Action{verb}'. The name of the method to
      *                                     call
      *                                     (post) but only if the method defined by $method is not defined.
-     * @param array       $arguments       [optional] Default value=['id','idparent','event'] the arguments to pass to
-     *                                     the function
-     * @param array       $injectArguments [optional] You can inject arguments into the constructor of the instance.
+     * @param array       $arguments       [optional] Default value=['id','idparent','event']<br>
+     *                                     the arguments to pass to the method<br>
+     *                                     <b>Example</b><br>
+     *                                     <ul>
+     *                                     <li>['id','idparent'] (positional argument)</li>
+     *                                     <li>['named'=>'id] (named argument)</li>
+     *                                     <li>['named'=>'get:id:default'] get=origin, id:name,default(opt) the default
+     *                                     value</li>
+     *                                     <li>origins allowed: 'get','post','request','header','body','verb'</li></ul>
+     * @param array       $injectArguments [optional] You can inject values into the argument of the instance's
+     *                                     constructor.<br> It will do nothing if you pass an object as
+     *                                     $classStructure.
+     * @param string $onlyPath             default is "*"(any path), if set, then this method will only work if the path
+     *                                     (obtained by fetchPath) is the indicated here.
      * @return string|null
      * @throws Exception
      */
     public function callObjectEx(
-        ?string $classStructure = '{controller}Controller', bool $throwOnError = true,
+        $classStructure = '{controller}Controller', bool $throwOnError = true,
         ?string $method = '{action}Action', ?string $methodGet = '{action}Action{verb}',
         ?string $methodPost = '{action}Action{verb}', array $arguments = ['id', 'idparent', 'event'],
-        array   $injectArguments = []
+        array   $injectArguments = [],
+        string  $onlyPath='*'
     ): ?string
     {
-        if ($this->notAllowed === true) {
-            throw new UnexpectedValueException('Input method is not allowed',403);
+        if ($onlyPath!=='*' && $this->currentPath!==$onlyPath) {
+            // This object must be called using a specific path.
+            return null;
         }
-        $op = $this->replaceNamed($classStructure);
-        if (!class_exists($op)) {
+        if ($this->notAllowed === true) {
+            throw new UnexpectedValueException('Input method is not allowed', 403);
+        }
+        if (is_object($classStructure)) {
+            $className = get_class($classStructure);
+        } else if(is_callable($classStructure)) {
+            $className = '**CALLABLE**';
+        } else {
+            $className = $this->replaceNamed($classStructure);
+        }
+        if (!class_exists($className) && $className!=='**CALLABLE**') {
             if ($throwOnError) {
-                throw new RuntimeException("Class $op doesn't exist",404);
+                throw new RuntimeException("Class $className doesn't exist", 404);
             }
-            return "Class $op doesn't exist";
+            return "Class $className doesn't exist";
+        }
+        $args = [];
+        foreach ($arguments as $keyArg => $valueArg) {
+            if (in_array($valueArg, $this->allowedFields, true)) {
+                $args[$keyArg] = $this->{$valueArg};
+            } else if (is_string($valueArg) || is_numeric($valueArg)) {
+                $x = explode(':', $valueArg, 3); // get:fieldname:defaultvalue
+                if (count($x) < 2) {
+                    $msg = 'RouteOne::callObjectEx, argument incorrect, use type:name:default or a defined name';
+                    if ($throwOnError) {
+                        throw new RuntimeException($msg);
+                    }
+                    return $msg;
+                }
+                try {
+                    $args[$keyArg] = $this->getMultiple($x[1], $x[0], $x[2] ?? null);
+                } catch (Exception $ex) {
+                    if ($throwOnError) {
+                        throw new RuntimeException($ex->getMessage());
+                    }
+                    return $ex->getMessage();
+                }
+            } else {
+                // ['field'=>$someobjectorarray] or [$someobjectorarray]
+                $args[$keyArg] = $valueArg;
+            }
         }
         try {
-            $controller = new $op(...$injectArguments);
+            if(is_callable($classStructure)) {
+                $classStructure(...$args);
+                return null;
+            }
+            if (is_object($classStructure)) {
+                $controller = $classStructure;
+            } else {
+                $controller = new $className(...$injectArguments);
+            }
             $actionRequest = $this->replaceNamed($method);
             $actionGetPost = (!$this->isPostBack) ? $this->replaceNamed($methodGet)
                 : $this->replaceNamed($methodPost);
@@ -834,10 +926,7 @@ class RouteOne
             }
             return $ex->getMessage();
         }
-        $args = [];
-        foreach ($arguments as $a) {
-            $args[] = $this->{$a};
-        }
+
         if (method_exists($controller, $actionRequest)) {
             try {
                 $controller->{$actionRequest}(...$args);
@@ -858,10 +947,10 @@ class RouteOne
             }
         } else {
             $pb = $this->isPostBack ? '(POST)' : '(GET)';
-            $msgError = "Action ex [$actionRequest or $actionGetPost] $pb not found for class [$op]";
+            $msgError = "Action ex [$actionRequest or $actionGetPost] $pb not found for class [$className]";
             $msgError = strip_tags($msgError);
             if ($throwOnError) {
-                throw new UnexpectedValueException($msgError,400);
+                throw new UnexpectedValueException($msgError, 400);
             }
             return $msgError;
         }
@@ -880,10 +969,10 @@ class RouteOne
      */
     private function replaceNamed(?string $format): string
     {
-        if($format===null) {
+        if ($format === null) {
             return '';
         }
-        return preg_replace_callback("/{(\w+)}/", function ($matches) {
+        return preg_replace_callback("/{(\w+)}/", function($matches) {
             $nameField = $matches[1];
             $result = '';
             if (strpos($nameField ?? '', '_') > 0) {
@@ -971,8 +1060,8 @@ class RouteOne
     public function getCurrentServer(): string
     {
         $server_name = $this->serverName ?? $_SERVER['SERVER_NAME'] ?? null;
-        $c=filter_var($server_name,FILTER_VALIDATE_DOMAIN,FILTER_FLAG_HOSTNAME);
-        $server_name=$c?$server_name:$_SERVER['SERVER_ADDR']??'127.0.0.1';
+        $c = filter_var($server_name, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+        $server_name = $c ? $server_name : $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
         $sp = $_SERVER['SERVER_PORT'] ?? 80;
         $port = !in_array($sp, ['80', '443'], true) ? ':' . $sp : '';
         $https = $_SERVER['HTTPS'] ?? '';
@@ -1013,10 +1102,9 @@ class RouteOne
         ?string $action = null,
         ?string $id = null,
         ?string $idparent = null,
-        ?string $category=null,
-        ?string $subcategory=null,
-        ?string $subsubcategory=null
-
+        ?string $category = null,
+        ?string $subcategory = null,
+        ?string $subsubcategory = null
     ): self
     {
         if ($module !== null) {
@@ -1212,22 +1300,22 @@ class RouteOne
      *                            If not null, then it uses the id path to obtain the path.
      * @return string
      */
-    public function getUrlPath(?string $idPath=null):string
+    public function getUrlPath(?string $idPath = null): string
     {
-        $idPath=$idPath??$this->currentPath;
-        if(!isset($this->path[$idPath])) {
+        $idPath = $idPath ?? $this->currentPath;
+        if (!isset($this->path[$idPath])) {
             throw new RuntimeException("Path $idPath not defined");
         }
-        $patternItems=$this->path[$idPath];
-        $url=$this->base.'/'.$this->pathName[$idPath];
-        $final=[];
-        foreach($patternItems as $vArr) {
-            [$idx,$def]=$vArr;
-            $value=$this->{$idx}??$def;
-            $final[]=$value;
+        $patternItems = $this->path[$idPath];
+        $url = $this->base . '/' . $this->pathName[$idPath];
+        $final = [];
+        foreach ($patternItems as $vArr) {
+            [$idx, $def] = $vArr;
+            $value = $this->{$idx} ?? $def;
+            $final[] = $value;
         }
-        $url.=implode('/',$final);
-        return rtrim($url,'/');
+        $url .= implode('/', $final);
+        return rtrim($url, '/');
     }
 
     /**
@@ -1392,7 +1480,6 @@ class RouteOne
         $this->action = $action;
         return $this;
     }
-
 
     /**
      *
@@ -1623,8 +1710,8 @@ class RouteOne
         $this->notAllowed = false; // reset
         $this->isFetched = true;
         $urlFetchedOriginal = $_GET[$this->argumentName] ?? null; // controller/action/id/..
-        if($urlFetchedOriginal!==null) {
-            $urlFetchedOriginal=rtrim($urlFetchedOriginal,'/');
+        if ($urlFetchedOriginal !== null) {
+            $urlFetchedOriginal = rtrim($urlFetchedOriginal, '/');
         }
         unset($_GET[$this->argumentName]);
         /** @noinspection HostnameSubstitutionInspection */
@@ -1658,10 +1745,11 @@ class RouteOne
         }
         return explode('/', $urlFetched);
     }
-    public function redirect(string $url,int $statusCode = 303): void
+
+    public function redirect(string $url, int $statusCode = 303): void
     {
         header('Location: ' . $url, true, $statusCode);
-        if(http_response_code()) {
+        if (http_response_code()) {
             die(1);
         }
     }
@@ -1682,7 +1770,7 @@ class RouteOne
     }
 
     /**
-     * @param string $key the name of the flag to read
+     * @param string      $key     the name of the flag to read
      * @param string|null $default is the default value is the parameter is set
      *                             without value.
      * @param bool        $set     it is the value returned when the argument is set but there is no value assigned
@@ -1724,25 +1812,26 @@ class RouteOne
             $param = 'route.php';
         }
         echo "Creating .htaccess file: ";
-        $content= $this->openTemplate( __DIR__ . '/templates/htaccess_template.php');
-        $content=str_replace('route.php',$param,$content);
-        $this->validateWriteFile('.htaccess',$content);
+        $content = $this->openTemplate(__DIR__ . '/templates/htaccess_template.php');
+        $content = str_replace('route.php', $param, $content);
+        $this->validateWriteFile('.htaccess', $content);
         echo "Creating PHP file: ";
-        $content= $this->openTemplate( __DIR__ . '/templates/route_template.php');
-        $this->validateWriteFile($param,$content);
-
+        $content = $this->openTemplate(__DIR__ . '/templates/route_template.php');
+        $this->validateWriteFile($param, $content);
     }
-    protected function validateWriteFile(string $file,string $content):bool {
-        $fail=false;
-        $exists=@file_exists(getcwd().'/'.$file);
-        if($exists) {
-            echo self::colorLog(getcwd().'/'."$file file exists, skipping\n",'w');
-            $fail=true;
+
+    protected function validateWriteFile(string $file, string $content): bool
+    {
+        $fail = false;
+        $exists = @file_exists(getcwd() . '/' . $file);
+        if ($exists) {
+            echo self::colorLog(getcwd() . '/' . "$file file exists, skipping\n", 'w');
+            $fail = true;
         } else {
-            $result = @file_put_contents(getcwd().'/'.$file, $content);
+            $result = @file_put_contents(getcwd() . '/' . $file, $content);
             if (!$result) {
-                echo self::colorLog("Unable to write ".getcwd().'/'."$file file\n", 'e');
-                $fail=true;
+                echo self::colorLog("Unable to write " . getcwd() . '/' . "$file file\n", 'e');
+                $fail = true;
             } else {
                 echo self::colorLog("OK\n", 's');
             }
@@ -1795,6 +1884,4 @@ class RouteOne
         }
     }
     //</editor-fold>
-
-
 }

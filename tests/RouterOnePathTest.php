@@ -289,10 +289,10 @@ class RouterOneTestPath extends TestCase
         $this->ro->addPath('mybase/{controller:defcontroller}/{action:defaction}/{id:1}/{idparent:2}');
         $this->ro->addPath('mybase/{action:defaction}/{id:1}/{idparent:2}/{controller:defcontroller}');
         //$this->ro->fetchPath();
-        self::assertEquals('http://www.example.dom/mybase/cont/a/idparent/2',
-            $this->ro->url(null,'cont','a','id','idparent')->getUrlPath(0));
-        self::assertEquals('http://www.example.dom/mybase/a/idparent/2/cont',
-            $this->ro->url(null,'cont','a','id','idparent')->getUrlPath(1));
+        self::assertEquals('http://www.example.dom/mybase/cont/act/1/2',
+            $this->ro->url(null,'cont','act')->getUrlPath(0));
+        self::assertEquals('http://www.example.dom/mybase/act/id/idparent/cont',
+            $this->ro->url(null,'cont','act','id','idparent')->getUrlPath(1));
     }
 
 }
