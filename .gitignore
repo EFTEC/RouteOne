@@ -89,3 +89,4 @@ fabric.properties
 /.php_cs.cache
 /composer.lock
 /route.php
+/vendor/

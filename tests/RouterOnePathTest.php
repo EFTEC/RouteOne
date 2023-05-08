@@ -1,4 +1,5 @@
-<?php /** @noinspection PhpUnusedLocalVariableInspection */
+<?php /** @noinspection PhpUnhandledExceptionInspection */
+/** @noinspection PhpUnusedLocalVariableInspection */
 
 /** @noinspection HttpUrlsUsage */
 
@@ -14,6 +15,11 @@ class categoRYController2 {
     {
         echo 'action test called';
     }
+    public function actiontest2Action($id, $idparent='', $event='')
+    {
+        echo 'action test called';
+        return $id;
+    }
 }
 
 /**
@@ -27,10 +33,7 @@ class RouterOneTestPath extends TestCase
     /** @var RouteOne */
     public $ro;
 
-    public function setUp()
-    {
 
-    }
     public function testNaked(): void
     {
         $_SERVER['HTTP_HOST']='www.example.dom';
@@ -59,8 +62,42 @@ class RouterOneTestPath extends TestCase
         $this->ro->addPath('base/base2/{controller:base}/{id}/{idparent}','base');
         $this->assertEquals([['controller','base'],['id',null],['idparent',null]],$this->ro->path['base']);
         $this->assertEquals('base/base2/',$this->ro->pathName['base']);
+            }
+    public function testComplete():void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='module1/controller1/id123/';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->addPath('{module:module1}/{controller:base}/{id}/{idparent}','normal',
+            function(callable $next,$id=null,$idparent=null,$event=null) {
+                echo "middleware\n";
+                $result=$next($id,$idparent,$event); // calling the controller
+                echo "endmiddleware\n";
+                return $result;
+            }
+        );
+        $this->ro->addPath('base/base2/{controller:base}/{id}/{idparent}','base');
 
+        $this->assertEquals('normal',$this->ro->fetchPath());
+        $this->assertEquals('id123',$this->ro->callObjectEx(function(...$args) { return $args[0];}));
+    }
+    public function testComplete2():void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $_GET['req']='module1/controller1/id123/';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $this->ro->addPath('{module:module1}/{controller:base}/{id}/{idparent}','normal',
+            function(callable $next,$id=null,$idparent=null,$event=null) {
+                echo "middleware\n";
+                $result=$next($id,$idparent,$event); // calling the controller
+                echo "endmiddleware\n";
+                return $result;
+            }
+        );
+        $this->ro->addPath('base/base2/{controller:base}/{id}/{idparent}','base');
 
+        $this->assertEquals('normal',$this->ro->fetchPath());
+        $this->assertEquals('id123',$this->ro->callObjectEx(categoRYController2::class,true,'actiontest2Action'));
     }
     public function testRoot(): void
     {

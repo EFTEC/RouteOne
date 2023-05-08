@@ -19,42 +19,42 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
 <!-- TOC -->
 * [RouteOne](#routeone)
   * [Table of contents](#table-of-contents)
-  * [Example:](#example-)
+  * [Example:](#example)
   * [What it does?](#what-it-does)
-    * [What is **$id**, **$idparent** and **$event**?](#what-is-id--idparent-and-event-)
+    * [What is **$id**, **$idparent** and **$event**?](#what-is-id-idparent-and-event)
     * [**id**](#id)
     * [**idparent**](#idparent)
     * [**event**](#event)
     * [**Module**](#module)
   * [Getting started](#getting-started)
-    * [Using the cli (recommended)](#using-the-cli--recommended-)
+    * [Using the cli (recommended)](#using-the-cli-recommended)
       * [manual installation](#manual-installation)
-      * [1) Create a .htaccess file in the folder root (Apache)](#1--create-a-htaccess-file-in-the-folder-root--apache-)
-      * [Or configure nginx.conf (Nginx) Linux (not tested)](#or-configure-nginxconf--nginx--linux--not-tested-)
-      * [Or configure nginx.conf (Nginx) Windows](#or-configure-nginxconf--nginx--windows)
+      * [1) Create a .htaccess file in the folder root (Apache)](#1-create-a-htaccess-file-in-the-folder-root-apache)
+      * [Or configure nginx.conf (Nginx) Linux (not tested)](#or-configure-nginxconf-nginx-linux-not-tested)
+      * [Or configure nginx.conf (Nginx) Windows](#or-configure-nginxconf-nginx-windows)
   * [Using Paths](#using-paths)
-    * [clearPath()](#clearpath--)
-    * [addPath()](#addpath--)
-    * [fetchPath()](#fetchpath--)
+    * [clearPath()](#clearpath)
+    * [addPath()](#addpath)
+    * [fetchPath()](#fetchpath)
   * [Methods](#methods)
-    * [__construct($base='', $forcedType=null, $isModule=false)](#--construct--base---forcedtypenull-ismodulefalse-)
-    * [getQuery($key,$valueIfNotFound=null)](#getquery--keyvalueifnotfoundnull-)
-    * [setQuery($key,$value)](#setquery--keyvalue-)
+    * [__construct($base='', $forcedType=null, $isModule=false)](#constructbase-forcedtypenull-ismodulefalse)
+    * [getQuery($key,$valueIfNotFound=null)](#getquerykeyvalueifnotfoundnull)
+    * [setQuery($key,$value)](#setquerykeyvalue)
     * [fetch](#fetch)
     * [callObjectEx](#callobjectex)
-    * [callFile($fileStructure='%s.php',$throwOnError=true)](#callfile--filestructuresphp--throwonerrortrue-)
-    * [getHeader()](#getheader--)
-    * [getBody()](#getbody--)
+    * [callFile($fileStructure='%s.php',$throwOnError=true)](#callfilefilestructuresphpthrowonerrortrue)
+    * [getHeader()](#getheader)
+    * [getBody()](#getbody)
     * [](#)
-    * [getCurrentUrl($withoutFilename = true)](#getcurrenturl--withoutfilename--true-)
-    * [getCurrentServer()](#getcurrentserver--)
-    * [setCurrentServer($serverName)](#setcurrentserver--servername-)
-    * [getUrl($extraQuery = '',$includeQuery=false)](#geturl--extraquery----includequeryfalse-)
-    * [url($module,$controller,$action,$id,$idparent)](#url--modulecontrolleractionididparent-)
-    * [urlFront($module,$category,$subcategory,$subsubcategory,$id)](#urlfront--modulecategorysubcategorysubsubcategoryid-)
-    * [alwaysWWW($https = false)](#alwayswww--https--false-)
-    * [alwaysHTTPS()](#alwayshttps--)
-    * [alwaysNakedDomain($https = false)](#alwaysnakeddomain--https--false-)
+    * [getCurrentUrl($withoutFilename = true)](#getcurrenturlwithoutfilename--true)
+    * [getCurrentServer()](#getcurrentserver)
+    * [setCurrentServer($serverName)](#setcurrentserverservername)
+    * [getUrl($extraQuery = '',$includeQuery=false)](#geturlextraquery--includequeryfalse)
+    * [url($module,$controller,$action,$id,$idparent)](#urlmodulecontrolleractionididparent)
+    * [urlFront($module,$category,$subcategory,$subsubcategory,$id)](#urlfrontmodulecategorysubcategorysubsubcategoryid)
+    * [alwaysWWW($https = false)](#alwayswwwhttps--false)
+    * [alwaysHTTPS()](#alwayshttps)
+    * [alwaysNakedDomain($https = false)](#alwaysnakeddomainhttps--false)
   * [fields](#fields)
   * [Whitelist](#whitelist)
     * [Whitelist input.](#whitelist-input)
@@ -357,19 +357,53 @@ Syntax:
 It clears all the paths defined
 
 ### addPath()
-
 Syntax:
+> addPath($path, $name = null,callable $middleWare=null)
 
-> addPath($path, $name = null)
+It adds a paths that could be evaluated using fetchPath()    
+**Example:**
+```php
+$this->addPath('api/{controller}/{action}/{id:0}','apipath');  
+$this->addPath('/api/{controller}/{action}/{id:0}/','apipath'); // "/" at the beginner and end are trimmed.  
+$this->addPath('{controller}/{action}/{id:0}','webpath');  
+$this->addPath('{controller:root}/{action}/{id:0}','webpath'); // root path using default  
+$this->addPath('somepath','namepath',  
+     function(callable $next,$id=null,$idparent=null,$event=null) {  
+         echo "middleware\n";  
+         $result=$next($id,$idparent,$event); // calling the controller  
+         echo "endmiddleware\n";  
+          return $result;  
+      });  
+```
+**Note:**    
+The first part of the path, before the "{" is used to determine which path will be used.    
+Example "path/{controller}" and "path/{controller}/{id}", the system will consider that are the same path  
 
-It adds a new path.
+* **parameter** string        $path       The path, example "aaa/{controller}/{action:default}/{id}"    
+  Where **default** is the optional default value.   
+  * **{controller}**: The controller (class) to call  
+  * **{action}**: The action (method) to call  
+  * **{verb}**: The verb of the action (GET/POST,etc)  
+  * **{type}**: The type (value)  
+  * **{module}**: The module (value)  
+  * **{id}**: The id (value)  
+  * **{idparent}**: The id parent (value)  
+  * **{category}**: The category (value)  
+  * **{subcategory}**: The subcategory (value)  
+  * **{subsubcategory}**: The subsubcategory (value)  
 
-The path could start with a static location but the rest of the path must be defined by variables (enclosed by {})
-and separated by "/".
-You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}
-The **name** could be obtained using $this->currentPath. If you add a name with the same name, then it is replaced.
-If you don't set a name, then it uses an autonumeric.
-The **name** is also returned when you call $this->fetchPath()
+* **parameter** string|null   $name       (optional), the name of the path  
+* **parameter** callable|null $middleWare A callable function used for middleware.  
+  The first argument of the function must be a callable method  
+  The next arguments must be the arguments defined by callObjectEx  
+(id,idparent,event)
+
+* The path could start with a static location but the rest of the path must be defined by variables (enclosed by {})
+and separated by "/".  
+* You can also set a default value for a path by writing ":" after the name of the variable: {name:defaultvalue}  
+* The **name** could be obtained using $this->currentPath. If you add a name with the same name, then it is replaced.  
+* If you don't set a name, then it uses an autonumeric.  
+* The **name** is also returned when you call $this->fetchPath()  
 
 
 Example:
@@ -765,12 +799,71 @@ $this->setWhiteList('controller',null);
 ```
 ## CLI
 Routeone contains a basic CLI to create and initialize the configuration.
-The binary **pdoonecli** is located in the vendor/bin folder
+The binary **routeonecli** is located in the vendor/bin folder
 
-![img/img.png](img/img.png)
+![docs/cli1.jpg](docs/cli1.jpg)
+
+* Execute **routeonecli** and it will show a menu with a simple option [router]
+
+```shell
+./vendor/bin/routeonecli
+```
+
+
+
+* enter **router** and press enter. 
+
+  * You can use the TAB key to autocomplete. 
+  * You can use arrow-up and arrow-down to navigate in the options available
+  * If you write ?, it will show a simple help
+  * If you write ??, it will show a more technical help.
+
+  In the router menu, it will show the next screen:
+
+![docs/cli2.jpg](docs/cli2.jpg)
+
+Pending means that the operation is pending to do or it requires something to configure.
+
+* enter **configure**
+
+![docs/cli3.jpg](docs/cli3.jpg)
+
+* And enters the router filename without extension.
+* Then your developer machine. If you don't know, then press enter. 
+* Then your developer base url. 
+* And your production base url. If you don't have or don't know, then just use the default values
+
+Once done, configure will be marked as "ok"
+
+Now, lets configure the paths
+
+* Go to paths.
+
+![docs/cli4.jpg](docs/cli4.jpg)
+
+* And it will show the next menu, add, remove or edit.
+* Enter **add**
+
+![docs/cli5.jpg](docs/cli5.jpg)
+
+* And enter the name of the path, example web.
+* And the path (check path for see the syntax of the path)
+* Finally, enter the name space associate with this path
+* Once done, you have your first path.  You can add more paths later.
+* Press enter to return.
+
+![docs/cli6.jpg](docs/cli6.jpg)
+
+* Now, you can generate the htaccess file, the PHP router file, load the configuration, or save the configuration entered here.
+* To exit press return and return.
 
 
 ## Changelog
+* 2023-05-08 1.30
+  * addPath() now allows to specify a middleware. 
+* 2023-04-02 1.29
+  * [RouteOneCli] updated
+  * new method instance() so we could get a singleton instance using RouteOne::instance();
 * 2023-03-04 1.28
   * Added static paths to addPath()
   * callObjectEx() now allows any parameter. If the parameter is not a defined value, then it is obtained from the route.

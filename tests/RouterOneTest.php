@@ -30,10 +30,7 @@ class RouterOneTest extends TestCase
     /** @var RouteOne */
     public $ro;
 
-    public function setUp()
-    {
 
-    }
     public function testNaked(): void
     {
         $_SERVER['HTTP_HOST']='www.example.dom';
@@ -170,7 +167,11 @@ class RouterOneTest extends TestCase
                 if($id!=='id' || $idpost!=='idpost' || $missing!=='notfound') {
                     throw new RuntimeException('no id');
                 }
-                },true,'{action}Action','{action}Action{verb}','{action}Action{verb}',['id','post:idpost','post:missing:notfound']);
+                }
+                ,true,'{action}Action'
+            ,'{action}Action{verb}'
+            ,'{action}Action{verb}'
+            ,['id','post:idpost','post:missing:notfound']);
         self::assertEquals(null,$r,'no error');
 
         $instance=new categoRYController();
