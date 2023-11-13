@@ -383,7 +383,7 @@ Example "path/{controller}" and "path/{controller}/{id}", the system will consid
   Where **default** is the optional default value.   
   * **{controller}**: The controller (class) to call  
   * **{action}**: The action (method) to call  
-  * **{verb}**: The verb of the action (GET/POST,etc)  
+  * **{verb}**: The verb of the action (GET/POST,etc.)  
   * **{type}**: The type (value)  
   * **{module}**: The module (value)  
   * **{id}**: The id (value)  
@@ -822,7 +822,7 @@ The binary **routeonecli** is located in the vendor/bin folder
 
 ![docs/cli2.jpg](docs/cli2.jpg)
 
-Pending means that the operation is pending to do or it requires something to configure.
+Pending means that the operation is pending to do, or it requires something to configure.
 
 * enter **configure**
 
@@ -859,6 +859,9 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2023-11-13 1.30.1
+  * fixed a bug with fetch() when the url fetched is null 
+  * updated .htaccess, so it works better with different situations.
 * 2023-05-08 1.30
   * addPath() now allows to specify a middleware. 
 * 2023-04-02 1.29

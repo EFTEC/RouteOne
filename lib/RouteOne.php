@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.30 2023-05-08
+ * @version   1.30.1 2023-11-13
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.30';
+    public const VERSION = '1.30.1';
     /** @var RouteOne */
     public static $instance;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
@@ -259,7 +259,7 @@ class RouteOne
     /**
      * It adds a paths that could be evaluated using fetchPath()<br/>
      * <b>Example:</b><br/>
-     * <pre>
+     * ```php
      * $this->addPath('api/{controller}/{action}/{id:0}','apipath');
      * $this->addPath('/api/{controller}/{action}/{id:0}/','apipath'); // "/" at the beginner and end are trimmed.
      * $this->addPath('{controller}/{action}/{id:0}','webpath');
@@ -271,7 +271,7 @@ class RouteOne
      *          echo "endmiddleware\n";
      *           return $result;
      *       });
-     * </pre>
+     * ```
      * <b>Note:</b><br/>
      * The first part of the path, before the "{" is used to determine which path will be used.<br/>
      * Example "path/{controller}" and "path/{controller}/{id}", the system will consider that are the same path
@@ -280,7 +280,7 @@ class RouteOne
      *                                  <ul>
      *                                  <li><b>{controller}</b>: The controller (class) to call</li>
      *                                  <li><b>{action}</b>: The action (method) to call</li>
-     *                                  <li><b>{verb}</b>: The verb of the action (GET/POST,etc)</li>
+     *                                  <li><b>{verb}</b>: The verb of the action (GET/POST,etc.)</li>
      *                                  <li><b>{type}</b>: The type (value)</li>
      *                                  <li><b>{module}</b>: The module (value)</li>
      *                                  <li><b>{id}</b>: The id (value)</li>
@@ -445,7 +445,7 @@ class RouteOne
         $this->requestUri = $_SERVER['REQUEST_URI'] ?? '';
         // nginx returns a path as /aaa/bbb apache aaa/bbb
         if ($urlFetched !== '') {
-            $urlFetched = ltrim($urlFetched, '/');
+            $urlFetched =  ltrim($urlFetched??'', '/');
         }
         $this->queries = $_GET;
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
@@ -536,10 +536,10 @@ class RouteOne
      * <li>somedomain.dom/controller1  is also accepted (and controller is equals as "Controller1")</li>
      * </ul>
      * <b>Example:</b>
-     * <pre>
+     * ```php
      * // we only want to allow the controllers called Purchase, Invoice and Customer.
      * $this->setWhiteList('controller',['Purchase','Invoice','Customer']);
-     * </pre>
+     * ```
      * <b>Note:</b> this must be executed before fetch()
      * @param string     $type  =['controller','category','action','subcategory','subsubcategory','module'][$i]
      * @param array|null $array if null (default value) then we don't validate the information.
@@ -674,15 +674,15 @@ class RouteOne
     /**
      * It creates and object (for example, a Controller object) and calls the method.<br/>
      * <b>Example:</b> (type controller,api,ws)
-     * <pre>
+     * ```php
      * $this->callObject('cocacola\controller\%sController'); // %s is replaced by the name of the current controller
      * $this->callObject('namespace/%2s/%1sClass'); // it calls namespace/Module/ExampleClass (only if module is able)
      * $this->callObject('namespace/%2s/%3s%/%1sClass'); // %3s is for the type of path
-     * </pre>
+     * ```
      * <b>Note:</b> The method called should be written as (static or not)<br/>
-     * <pre>
+     * ```php
      * public function *nameaction*Action($id="",$idparent="",$event="") { }
-     * </pre>
+     * ```
      *
      * @param string $classStructure structure of the class.<br/>
      *                               <b>Type=controller,api,ws</b><br/>
@@ -852,7 +852,7 @@ class RouteOne
      * <li><b>{l_*tag*}</b> lowercase</li>
      * </ul>
      * <b>Example:</b><br/>
-     * <pre>
+     * ```php
      * // controller example http://somedomain/Customer/Insert/23
      * $this->callObjectEx('cola\controller\{controller}Controller');
      * // it calls the method cola\controller\Customer::InsertAction(23,'','');
@@ -867,7 +867,7 @@ class RouteOne
      *
      * // callable instead of a class
      * $this->callObjectEx(function($id,$idparent,$event) { echo "hi"; });
-     * </pre>
+     * ```
      *
      * @param string|object|callable $classStructure  [optional] Default value='{controller}Controller'.<br/>
      *                                                If classStructure is an <b>string</b> then it must indicate the
@@ -1278,14 +1278,14 @@ class RouteOne
      * This function is used to identify the type automatically. If the url is empty then it is marked as default<br/>
      * It returns the first one that matches.
      * <b>Example:</b><br/>
-     * <pre>
+     * ```php
      * $this->setIdentifyType([
      *      'controller' =>'backend', // domain.dom/backend/controller/action => controller type
      *      'api'=>'api',             // domain.dom/api/controller => api type
      *      'ws'=>'api/ws'            // domain.dom/api/ws/controller => ws type
      *      'front'=>''               // domain.dom/* =>front (any other that does not match)
      * ]);
-     * </pre>
+     * ```
      *
      * @param $array
      */
@@ -1312,10 +1312,10 @@ class RouteOne
     /**
      * It reconstructs an url using the current information.<br/>
      * <b>Example:</b><br/>
-     * <pre>
+     * ```php
      * $currenturl=$this->getUrl();
      * $buildurl=$this->url('mod','controller','action',20)->getUrl();
-     * </pre>
+     * ```
      * <b>Note:</b>. It discards any information outside the values pre-defined
      * (example: /controller/action/id/idparent/<cutcontent>?arg=1&arg=2)<br/>
      * It does not consider the path() structure but the type of url.

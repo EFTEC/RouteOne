@@ -3,10 +3,8 @@
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
-
+    # based in Laravel .htaccess
     RewriteEngine On
-    DirectoryIndex route.php
-
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -16,8 +14,9 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Send Requests To router
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^(.*)$ route.php?req=$1 [L,QSA]
+    #RewriteRule ^ index.php [L]
+    RewriteRule ^(.*)$ index.php?req=$1 [L]
 </IfModule>
