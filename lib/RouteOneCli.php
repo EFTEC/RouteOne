@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection UnknownInspectionInspection */
 
 namespace eftec\routeone;
 
@@ -243,7 +243,7 @@ class RouteOneCli
     {
         $file = $this->cli->getValue('routerfilename') . '.php';
         $content = $this->openTemplate(__DIR__ . '/templates/htaccess_template.php');
-        $content = str_replace('route.php', $file, $content);
+        $content = str_replace('changeme.php', $file, $content);
         $this->validateWriteFile('.htaccess', $content);
     }
 

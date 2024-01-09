@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.30.1 2023-11-13
+ * @version   1.31 2024-01-09
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.30.1';
+    public const VERSION = '1.31';
     /** @var RouteOne */
     public static $instance;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
@@ -299,7 +299,7 @@ class RouteOne
     public function addPath(string $path, ?string $name = null, ?callable $middleWare = null): RouteOne
     {
         if (!$path) {
-            throw new RuntimeException('Path must not be empty, use default value to set a root path');
+            throw new RuntimeException('Path must not be empty, use a path with a default value, example: {controller:root}');
         }
         $path = trim($path, '/');
         $x0 = strpos($path, '{');

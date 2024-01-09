@@ -859,6 +859,7 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2024-01-09 1.31
 * 2023-11-13 1.30.1
   * fixed a bug with fetch() when the url fetched is null 
   * updated .htaccess, so it works better with different situations.

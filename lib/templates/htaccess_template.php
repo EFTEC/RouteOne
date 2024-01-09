@@ -17,6 +17,6 @@
     # Send Requests To router
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    #RewriteRule ^ index.php [L]
-    RewriteRule ^(.*)$ index.php?req=$1 [L]
+    #RewriteRule ^ changeme.php [L]
+    RewriteRule ^(.*)$ changeme.php?req=$1 [L,QSA]
 </IfModule>
