@@ -19,6 +19,7 @@ class RouteOneCli
     {
         $this->route = new RouteOne();
         $this->cli = CliOne::instance();
+        $this->cli->debug=true;
         if (!CliOne::hasMenu()) {
             $this->cli->setErrorType();
             $this->cli->addMenu('mainmenu',
@@ -61,7 +62,7 @@ class RouteOneCli
         $this->cli->setVariable('routerconfigpath', '<red>pending</red>');
         $this->cli->setVariable('routerconfigfull', '<red>pending</red>');
         $this->cli->addVariableCallBack('router', function(CliOne $cli) {
-            if ($cli->getValue('routerfilename')) {
+            if ($cli->getValue('dev')) {
                 $file = true;
                 $cli->setVariable('routerconfig', '<green>ok</green>', false);
             } else {
@@ -98,6 +99,7 @@ class RouteOneCli
             }
             $this->cli->evalMenu('mainmenu', $this);
         }
+
     }
 
     public function showLogo(): void
@@ -141,13 +143,12 @@ class RouteOneCli
                     $tmp2 = $this->cli->createOrReplaceParam('extracolumn_sql')
                         //->setAllowEmpty()
                         ->setInput()
-                        ->setDescription('', 'Select the path',
-                            ['select the path to be used using the syntax {id:defaultvalue}',
-                                'example:{controller:Home}/{id}/{idparent} '
+                        ->setDescription('', 'Select the path (? for help)',
+                            ['select the path to be used using the syntax:',
+                                'fixedpath/{requiredvalue}/{optionalvalue:defaultvalue}',
+                                'Example:{controller:Home}/{id}/{idparent} '
                                 ,'{controller}: the controller'
                                 ,'{action}: the action'
-                                ,'{event}: the event'
-                                ,'{verb}: the verb (GET/POST/etc.)'
                                 ,'{id}: the identifier'
                                 ,'{idparent}: the parent object'
                                 ,'{category}: the category'
@@ -241,7 +242,7 @@ class RouteOneCli
     /** @noinspection PhpUnused */
     public function menuRouterOneHtaccess(): void
     {
-        $file = $this->cli->getValue('routerfilename') . '.php';
+        $file = 'index.php';
         $content = $this->openTemplate(__DIR__ . '/templates/htaccess_template.php');
         $content = str_replace('changeme.php', $file, $content);
         $this->validateWriteFile('.htaccess', $content);
@@ -250,7 +251,7 @@ class RouteOneCli
     public function menuRouterOneRouter(): void
     {
         $config = $this->getConfig();
-        $file = $this->cli->getValue('routerfilename') . '.php';
+        $file = 'index.php';
         $content = "<?php\n" . $this->openTemplate(__DIR__ . '/templates/route_template.php');
         $namespaces = [];
         $paths = [];
@@ -331,12 +332,12 @@ class RouteOneCli
     {
         $this->cli->upLevel('configure');
         $this->cli->setColor(['byellow'])->showBread();
-        $this->cli->createOrReplaceParam('routerfilename', [], 'onlyinput')
+       /* $this->cli->createOrReplaceParam('routerfilename', [], 'onlyinput')
             ->setDescription('The router filename', 'Select the router filename', [
-                'example: router.php'])
-            ->setInput(true, 'string', 'router.php')
+                'example: index.php'])
+            ->setInput(true, 'string', 'index.php')
             ->setCurrentAsDefault()
-            ->evalParam(true);
+            ->evalParam(true);*/
         $this->cli->createOrReplaceParam('dev', [], 'none')
             ->setDefault(gethostname())
             ->setCurrentAsDefault()
@@ -367,7 +368,7 @@ class RouteOneCli
 
     public function getConfig(): array
     {
-        $r= $this->cli->getValueAsArray(['routerfilename', 'baseurldev', 'baseurlprod', 'dev']);
+        $r= $this->cli->getValueAsArray([ 'baseurldev', 'baseurlprod', 'dev']);
         $r['dev']= $r['dev']==='yes'?gethostname():'';
         $r['paths']=$this->paths;
         return $r;
@@ -377,7 +378,7 @@ class RouteOneCli
     {
         $this->paths = $array['paths'];
         unset($array['paths']);
-        $this->cli->setParamUsingArray($array, ['routerfilename', 'baseurldev', 'baseurlprod', 'dev']);
+        $this->cli->setParamUsingArray($array, [ 'baseurldev', 'baseurlprod', 'dev']);
         $this->cli->callVariablesCallBack();
     }
 

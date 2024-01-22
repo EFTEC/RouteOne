@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.31 2024-01-09
+ * @version   1.32 2024-01-22
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.31';
+    public const VERSION = '1.32';
     /** @var RouteOne */
     public static $instance;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
@@ -64,6 +64,7 @@ class RouteOne
     /** @var bool if true then the whitelist validation failed and the value is not allowed */
     public $notAllowed = false;
     public $lastError = [];
+
     /**
      * @var string|null it stores the current path (name) calculated by fetchPath() or null if no path is set.
      */
@@ -256,6 +257,7 @@ class RouteOne
         $this->pathName = [];
         $this->middleWare = [];
     }
+
     /**
      * It adds a paths that could be evaluated using fetchPath()<br/>
      * <b>Example:</b><br/>
@@ -275,12 +277,11 @@ class RouteOne
      * <b>Note:</b><br/>
      * The first part of the path, before the "{" is used to determine which path will be used.<br/>
      * Example "path/{controller}" and "path/{controller}/{id}", the system will consider that are the same path
-     * @param string        $path       The path, example "aaa/{controller}/{action:default}/{id}"<br/>
+     * @param string        $path       The path, example "aaa/{requiredvalue}/{optionavalue:default}"<br/>
      *                                  Where <b>default</b> is the optional default value.
      *                                  <ul>
      *                                  <li><b>{controller}</b>: The controller (class) to call</li>
      *                                  <li><b>{action}</b>: The action (method) to call</li>
-     *                                  <li><b>{verb}</b>: The verb of the action (GET/POST,etc.)</li>
      *                                  <li><b>{type}</b>: The type (value)</li>
      *                                  <li><b>{module}</b>: The module (value)</li>
      *                                  <li><b>{id}</b>: The id (value)</li>
@@ -307,7 +308,7 @@ class RouteOne
             $partStr = '';
             $base = $path;
         } else {
-            $base = substr($path, 0, $x0);
+            $base = substr($path, 0, $x0); // base is the fixed value at the left of the path.
             $partStr = substr($path, $x0);
         }
         $items = explode('/', $partStr);
@@ -345,10 +346,12 @@ class RouteOne
         $this->currentPath = null;
         $urlFetchedOriginal = $this->getUrlFetchedOriginal();
         $this->queries = $_GET;
+        $this->event = $this->getRequest('_event');
+        $this->extra = $this->getRequest('_extra');
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
         foreach ($this->path as $pnum => $pattern) {
             if ($this->pathName[$pnum] !== '' && strpos($urlFetchedOriginal ?? '', $this->pathName[$pnum]) !== 0) {
-                // basePath url does not match.
+                // basePath url does not match.  Basepath is the fixed path before the variable path
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
                 continue;
             }
@@ -360,10 +363,10 @@ class RouteOne
             $path = $this->getExtracted($urlFetched);
             foreach ($this->path[$pnum] as $key => $v) {
                 if ($v[1] === null) {
-                    if (!array_key_exists($key, $path) || !isset($path[$key])) {
+                    if (!array_key_exists($key, $path) || (!isset($path[$key]) || $path[$key]==='')  ) {
                         // the field is required but there we don't find any value
                         $this->lastError[$pnum] = "Pattern [$pnum] required field ($v[0]) not found in url";
-                        continue;
+                        continue 2;
                     }
                     $name = $v[0];
                     $value = $path[$key];
@@ -409,8 +412,7 @@ class RouteOne
                         throw new RuntimeException("pattern incorrect [$name:$value]");
                 }
             }
-            $this->event = $this->getRequest('_event');
-            $this->extra = $this->getRequest('_extra');
+
             $this->currentPath = $pnum;
             break;
         }
@@ -445,7 +447,7 @@ class RouteOne
         $this->requestUri = $_SERVER['REQUEST_URI'] ?? '';
         // nginx returns a path as /aaa/bbb apache aaa/bbb
         if ($urlFetched !== '') {
-            $urlFetched =  ltrim($urlFetched??'', '/');
+            $urlFetched = ltrim($urlFetched ?? '', '/');
         }
         $this->queries = $_GET;
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
@@ -976,10 +978,10 @@ class RouteOne
             }
             if (is_object($classStructure)) {
                 $controller = $classStructure;
-            } else if(method_exists($className,'getInstance')) {
-                $controller=$className->getInstance(); // try to autowire an instance.
-            } elseif(method_exists($className,'instance')) {
-                $controller=$className->instance(); // try to autowire an instance
+            } else if (method_exists($className, 'getInstance')) {
+                $controller = $className->getInstance(); // try to autowire an instance.
+            } elseif (method_exists($className, 'instance')) {
+                $controller = $className->instance(); // try to autowire an instance
             } else {
                 $controller = new $className(...$injectArguments); // try to create a new controller.
             }
@@ -998,9 +1000,9 @@ class RouteOne
                 //$call = $controller->{$actionRequest};
                 if ($this->currentPath !== null && $this->middleWare[$this->currentPath] !== null) {
                     return $this->middleWare[$this->currentPath](
-                        static function(...$args) use ($controller,$actionRequest) { // it is a wrapper function
+                        static function(...$args) use ($controller, $actionRequest) { // it is a wrapper function
                             return $controller->{$actionRequest}(...$args);
-                            }
+                        }
                         , ...$args);
                 }
                 $controller->{$actionRequest}(...$args);
@@ -1016,7 +1018,7 @@ class RouteOne
                 if ($this->currentPath !== null && $this->middleWare[$this->currentPath] !== null) {
                     //return $this->middleWare[$this->currentPath]($call, ...$args);
                     return $this->middleWare[$this->currentPath](
-                        static function(...$args) use ($controller,$actionGetPost) { // it is a wrapper function
+                        static function(...$args) use ($controller, $actionGetPost) { // it is a wrapper function
                             return $controller->{$actionGetPost}(...$args);
                         }
                         , ...$args);

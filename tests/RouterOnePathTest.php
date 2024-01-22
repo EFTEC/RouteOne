@@ -50,6 +50,28 @@ class RouterOneTestPath extends TestCase
         $url=$this->ro->alwaysNakedDomain(true,false);
         self::assertEquals('https://example.dom',$url);
     }
+    public function testMultiplePath():void
+    {
+        $_SERVER['HTTP_HOST'] = 'www.example.dom';
+        $this->ro = new RouteOne('http://www.example.dom');
+        $_GET['req'] = 'a1';
+        $this->ro->addPath('{controller}/{id}', 'normal');
+        $this->ro->addPath('{controller}/{id:222}', 'id');
+        $this->ro->fetchPath();
+        $this->assertEquals('id', $this->ro->currentPath);
+    }
+    public function testMultiplePath2():void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $_GET['req']='';
+        $this->ro->addPath('{controller}','normal');
+        $this->ro->addPath('{controller:222}','root');
+        $this->ro->fetchPath();
+        $this->assertEquals('root',$this->ro->currentPath);
+
+
+    }
     public function testAddPath():void
     {
         $_SERVER['HTTP_HOST']='www.example.dom';
@@ -68,7 +90,7 @@ class RouterOneTestPath extends TestCase
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_GET['req']='module1/controller1/id123/';
         $this->ro=new RouteOne('http://www.example.dom');
-        $this->ro->addPath('{module:module1}/{controller:base}/{id}/{idparent}','normal',
+        $this->ro->addPath('{module:module1}/{controller:base}/{id:id123}/{idparent:}','normal',
             function(callable $next,$id=null,$idparent=null,$event=null) {
                 echo "middleware\n";
                 $result=$next($id,$idparent,$event); // calling the controller
@@ -86,7 +108,7 @@ class RouterOneTestPath extends TestCase
         $_SERVER['HTTP_HOST']='www.example.dom';
         $_GET['req']='module1/controller1/id123/';
         $this->ro=new RouteOne('http://www.example.dom');
-        $this->ro->addPath('{module:module1}/{controller:base}/{id}/{idparent}','normal',
+        $this->ro->addPath('{module:module1}/{controller:base}/{id:id123}/{idparent:}','normal',
             function(callable $next,$id=null,$idparent=null,$event=null) {
                 echo "middleware\n";
                 $result=$next($id,$idparent,$event); // calling the controller
@@ -216,7 +238,7 @@ class RouterOneTestPath extends TestCase
         $this->ro=new RouteOne('http://www.example.dom',null,['Module'],false,'modulefront');
         $url=$this->ro->getCurrentUrl();
         self::assertNotEmpty($url);
-        $this->ro->addPath('{module}/{category}/{subcategory}/{subsubcategory}/{id}/{idparent}');
+        $this->ro->addPath('{module}/{category}/{subcategory}/{subsubcategory}/{id}/{idparent:}');
         $this->ro->fetchPath();
         self::assertEquals('', $this->ro->getAction());
         self::assertEquals('MyController', $this->ro->getCategory());

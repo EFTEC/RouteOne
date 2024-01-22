@@ -37,7 +37,7 @@ This library is based in **CoC Convention over Configuration**. It reduces the b
     * [addPath()](#addpath)
     * [fetchPath()](#fetchpath)
   * [Methods](#methods)
-    * [__construct($base='', $forcedType=null, $isModule=false)](#constructbase-forcedtypenull-ismodulefalse)
+    * [__construct($base='', $forcedType=null, $isModule=false)](#__constructbase-forcedtypenull-ismodulefalse)
     * [getQuery($key,$valueIfNotFound=null)](#getquerykeyvalueifnotfoundnull)
     * [setQuery($key,$value)](#setquerykeyvalue)
     * [fetch](#fetch)
@@ -859,6 +859,10 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2024-01-22 1.32
+  * unit test updated. 
+  * now route file is always called index.php
+  * fetchPath() considers the field that is required and the field that is optional.
 * 2024-01-09 1.31
 * 2023-11-13 1.30.1
   * fixed a bug with fetch() when the url fetched is null 

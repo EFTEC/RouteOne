@@ -17,24 +17,26 @@ class RouteOneCliTest extends TestCase
 
         parent::setUp();
         $this->cli=new CliOne();
+        $this->cli->debug=true;
         chdir(__DIR__);
 
     }
 
     public function test1(): void
     {
-        CliOne::testUserInput(['router', 'configure','filetest','yes','',''
+        CliOne::testUserInput(['router', 'configure','filetest','',''
             ,'paths','add','path1','','','remove','path1'
             ,'add','path2','',''
-            ,'edit','path2','a','b','','htaccess','router'
+            ,'edit','path2','a','b',''
+            ,'htaccess'
+            ,'router'
             ,'save','yes','configex','','']);
 
         $this->route=new RouteOneCli();
         $this->assertEquals([
-            'routerfilename' => 'configex',
             'baseurldev' => 'http://localhost',
             'baseurlprod' => 'https://www.domain.dom',
-            'dev' => gethostname(),
+            'dev' => '',
             'paths' =>
                 [
                     'path2' => 'a, b',
