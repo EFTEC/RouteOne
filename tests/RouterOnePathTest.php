@@ -83,7 +83,7 @@ class RouterOneTestPath extends TestCase
 
         $this->ro->addPath('base/base2/{controller:base}/{id}/{idparent}','base');
         $this->assertEquals([['controller','base'],['id',null],['idparent',null]],$this->ro->path['base']);
-        $this->assertEquals('base/base2/',$this->ro->pathName['base']);
+        $this->assertEquals('base/base2/',$this->ro->pathBase['base']);
             }
     public function testComplete():void
     {
@@ -128,6 +128,15 @@ class RouterOneTestPath extends TestCase
         $this->ro->addPath('{controller:base}/{id}/{idparent}','normal');
         $this->ro->fetchPath();
         self::assertEquals('base',$this->ro->controller);
+    }
+    public function testRoot2(): void
+    {
+        $_SERVER['HTTP_HOST']='www.example.dom';
+        $this->ro=new RouteOne('http://www.example.dom');
+        $_GET['req']='dummyurl/';
+        $this->ro->addPath('dummyurl','normal');
+        $this->ro->fetchPath();
+        self::assertEquals('normal',$this->ro->currentPath);
     }
     public function testMisc1(): void
     {

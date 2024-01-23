@@ -859,6 +859,8 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2024-01-22 1.32.1
+  * fixed a problem when the pattern doesn't have values, example "contact/" 
 * 2024-01-22 1.32
   * unit test updated. 
   * now route file is always called index.php

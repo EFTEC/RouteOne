@@ -16,12 +16,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2023 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.32 2024-01-22
+ * @version   1.32.1 2024-01-22
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.32';
+    public const VERSION = '1.32.1';
     /** @var RouteOne */
     public static $instance;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
@@ -70,7 +70,7 @@ class RouteOne
      */
     public $currentPath;
     /** @var array */
-    public $pathName = [];
+    public $pathBase = [];
     /** @var array */
     public $path = [];
     /** @var callable[] */
@@ -254,7 +254,7 @@ class RouteOne
     public function clearPath(): void
     {
         $this->path = [];
-        $this->pathName = [];
+        $this->pathBase = [];
         $this->middleWare = [];
     }
 
@@ -315,18 +315,20 @@ class RouteOne
         $itemArr = [];
         foreach ($items as $v) {
             $p = trim($v, '{}' . " \t\n\r\0\x0B");
-            $itemAdd = explode(':', $p, 2);
-            if (count($itemAdd) === 1) {
-                $itemAdd[] = null; // add a default value
+            if($p!=='') {
+                $itemAdd = explode(':', $p, 2);
+                if (count($itemAdd) === 1) {
+                    $itemAdd[] = null; // add a default value
+                }
+                $itemArr[] = $itemAdd;
             }
-            $itemArr[] = $itemAdd;
         }
         if ($name === null) {
-            $this->pathName[] = $base;
+            $this->pathBase[] = $base;
             $this->path[] = $itemArr;
             $this->middleWare[] = $middleWare;
         } else {
-            $this->pathName[$name] = $base;
+            $this->pathBase[$name] = $base;
             $this->path[$name] = $itemArr;
             $this->middleWare[$name] = $middleWare;
         }
@@ -335,12 +337,12 @@ class RouteOne
 
     /**
      * It fetches the path previously defined by addPath.
+     * @param string $charactersAllowed =['alphanumerichypens','alphanumericnohypens',''][$i]
      *
      * @return int|string|null return null if not path is evaluated,<br/>
      *                     otherwise, it returns the number/name of the path. It could return the value 0 (first path)
-     * @noinspection NotOptimalRegularExpressionsInspection
      */
-    public function fetchPath()
+    public function fetchPath(string $charactersAllowed='alphanumericnohypens')
     {
         $this->lastError = [];
         $this->currentPath = null;
@@ -350,12 +352,13 @@ class RouteOne
         $this->extra = $this->getRequest('_extra');
         unset($this->queries[$this->argumentName], $this->queries['_event'], $this->queries['_extra']);
         foreach ($this->path as $pnum => $pattern) {
-            if ($this->pathName[$pnum] !== '' && strpos($urlFetchedOriginal ?? '', $this->pathName[$pnum]) !== 0) {
+            if ($this->pathBase[$pnum] !== '' && strpos($urlFetchedOriginal ?? '', $this->pathBase[$pnum]) !== 0) {
                 // basePath url does not match.  Basepath is the fixed path before the variable path
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
                 continue;
             }
-            $urlFetched = substr($urlFetchedOriginal ?? '', strlen($this->pathName[$pnum]));
+
+            $urlFetched = substr($urlFetchedOriginal ?? '', strlen($this->pathBase[$pnum]));
             // nginx returns a path as /aaa/bbb apache aaa/bbb
             if ($urlFetched !== '') {
                 $urlFetched = ltrim($urlFetched, '/');
@@ -379,17 +382,26 @@ class RouteOne
                         $value = $v[1];
                     }
                 }
-                // 'controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
-                //        , 'subcategory', 'subsubcategory'
+                switch ($charactersAllowed) {
+                    case 'alphanumerichypens':
+                        $pattern='/[^a-zA-Z0-9_-]/';
+                        break;
+                    case 'alphanumericnohypens':
+                        $pattern='/[^a-zA-Z0-9_]/';
+                        break;
+                    default:
+                        $pattern=null; // no control
+
+                }
                 switch ($name) {
                     case 'controller':
-                        $this->controller = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->controller =!$pattern ? $value: preg_replace($pattern, "", $value);
                         break;
                     case 'action':
-                        $this->action = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->action = !$pattern ? $value:preg_replace($pattern, "", $value);
                         break;
                     case 'module':
-                        $this->module = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->module = !$pattern ? $value:preg_replace($pattern, "", $value);
                         break;
                     case 'id':
                         $this->id = $value;
@@ -398,13 +410,13 @@ class RouteOne
                         $this->idparent = $value;
                         break;
                     case 'category':
-                        $this->category = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->category = !$pattern ? $value:preg_replace($pattern, "", $value);
                         break;
                     case 'subcategory':
-                        $this->subcategory = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->subcategory = !$pattern ? $value:preg_replace($pattern, "", $value);
                         break;
                     case 'subsubcategory':
-                        $this->subsubcategory = preg_replace('/[^a-zA-Z0-9_]/', "", $value);
+                        $this->subsubcategory = !$pattern ? $value:preg_replace($pattern, "", $value);
                         break;
                     case '':
                         break;
@@ -711,7 +723,7 @@ class RouteOne
      * @return string|null null if the operation was correct, or the message of error if it failed.
      * @throws Exception
      * @deprecated
-     * @see self::callObjectEx Use callObjectEx('{controller}Controller'); instead of callObject('%sController);
+     * @see self::callObjectEx Use callObjectEx('{controller}Controller'); instead of callObject('%sController');
      */
     public function callObject(
         string $classStructure = '%sController', bool $throwOnError = true,
@@ -899,7 +911,7 @@ class RouteOne
      *                                                <b>Example</b><br/>
      *                                                <ul>
      *                                                <li>['id','idparent'] (positional argument)</li>
-     *                                                <li>['named'=>'id] (named argument)</li>
+     *                                                <li>['named'=>'id'] (named argument)</li>
      *                                                <li>['named'=>'get:id:default'] get=origin, id:name,default(opt)
      *                                                the default value</li>
      *                                                </ul>
@@ -1284,9 +1296,8 @@ class RouteOne
      * $this->setIdentifyType([
      *      'controller' =>'backend', // domain.dom/backend/controller/action => controller type
      *      'api'=>'api',             // domain.dom/api/controller => api type
-     *      'ws'=>'api/ws'            // domain.dom/api/ws/controller => ws type
-     *      'front'=>''               // domain.dom/* =>front (any other that does not match)
-     * ]);
+     *      'ws'=>'api/ws',           // domain.dom/api/ws/controller => ws type
+     *      'front'=>'..']);            // domain.dom/* =>front (any other that does not match)
      * ```
      *
      * @param $array
@@ -1392,7 +1403,7 @@ class RouteOne
             throw new RuntimeException("Path $idPath not defined");
         }
         $patternItems = $this->path[$idPath];
-        $url = $this->base . '/' . $this->pathName[$idPath];
+        $url = $this->base . '/' . $this->pathBase[$idPath];
         $final = [];
         foreach ($patternItems as $vArr) {
             [$idx, $def] = $vArr;
