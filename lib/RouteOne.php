@@ -7,6 +7,7 @@
 namespace eftec\routeone;
 
 use Exception;
+use JsonException;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -14,75 +15,74 @@ use UnexpectedValueException;
  * Class RouteOne
  *
  * @package   RouteOne
- * @copyright 2019-2023 Jorge Castro Castillo
+ * @copyright 2019-2024 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.32.1 2024-01-22
+ * @version   1.33 2024-03-02
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.32.1';
-    /** @var RouteOne */
-    public static $instance;
+    public const VERSION = '1.33';
+    /** @var RouteOne|null */
+    public static ?RouteOne $instance = null;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
-    public $argumentName = 'req';
-    /** @var string It is the base url. */
-    public $base = '';
-    /** @var string=['api','ws','controller','front'][$i] It is the type url. */
-    public $type = '';
-    /** @var string It's the current module (if we are using a module). */
-    public $module = '';
-    /** @var string It's the controller. */
-    public $controller;
-    /** @var string It's the current action. */
-    public $action;
-    /** @var string It's the identifier. */
-    public $id;
-    /** @var string. It's the event (such as "click" on a button). */
-    public $event;
-    /** @var string. It is the current parent id (if any) */
-    public $idparent;
-    /** @var string. It's the event (such as "click on button"). */
-    public $extra;
-    /** @var string The current category. It is useful for the type 'front' */
-    public $category;
-    /** @var string The current sub-category. It is useful for the type 'front' */
-    public $subcategory;
-    /** @var string The current sub-sub-category. It is useful for the type 'front' */
-    public $subsubcategory;
+    public string $argumentName = 'req';
+    /** @var string|null It is the base url. */
+    public ?string $base = '';
+    /** @var null|string=['api','ws','controller','front'][$i] It is the type url. */
+    public ?string $type = '';
+    /** @var null|string It's the current module (if we are using a module). */
+    public ?string $module = '';
+    /** @var null|string It's the controller. */
+    public ?string $controller = null;
+    /** @var string|null It's the current action. */
+    public ?string $action = null;
+    /** @var string|null It's the identifier. */
+    public ?string $id = null;
+    /** @var string|null. It's the event (such as "click" on a button). */
+    public ?string $event = null;
+    /** @var string|null . It is the current parent id (if any) */
+    public ?string $idparent = null;
+    /** @var string|null. It's the event (such as "click on button"). */
+    public ?string $extra = null;
+    /** @var string|null The current category. It is useful for the type 'front' */
+    public ?string $category = null;
+    /** @var string|null The current sub-category. It is useful for the type 'front' */
+    public ?string $subcategory = null;
+    /** @var string|null The current sub-sub-category. It is useful for the type 'front' */
+    public ?string $subsubcategory = null;
     /** @var null|string the current server name. If not set then it is calculated by $_SERVER['SERVER_NAME'] */
-    public $serverName;
+    public ?string $serverName = null;
     /** @var boolean it's true if the page is POST, otherwise (GET,DELETE or PUT) it is false. */
-    public $isPostBack = false;
-    /** @var string The current HTML METHOD. It is always uppercase and only inside the array $allowedVerbs */
-    public $verb = 'GET';
+    public bool $isPostBack = false;
+    /** @var string|null The current HTML METHOD. It is always uppercase and only inside the array $allowedVerbs */
+    public ?string $verb = 'GET';
     /** @var string[] The list of allowed $verb. In case of error, the $verb is equals to GET */
-    public $allowedVerbs = ['GET', 'POST', 'PUT', 'DELETE'];
+    public array $allowedVerbs = ['GET', 'POST', 'PUT', 'DELETE'];
     /** @var string[] Allowed fields to be read and parsed by callObjectEx() */
-    public $allowedFields = ['controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
+    public array $allowedFields = ['controller', 'action', 'verb', 'event', 'type', 'module', 'id', 'idparent', 'category'
         , 'subcategory', 'subsubcategory'];
     /** @var bool if true then the whitelist validation failed and the value is not allowed */
-    public $notAllowed = false;
-    public $lastError = [];
-
+    public bool $notAllowed = false;
+    public array $lastError = [];
     /**
      * @var string|null it stores the current path (name) calculated by fetchPath() or null if no path is set.
      */
-    public $currentPath;
+    public ?string $currentPath = null;
     /** @var array */
-    public $pathBase = [];
+    public array $pathBase = [];
     /** @var array */
-    public $path = [];
+    public array $path = [];
     /** @var callable[] */
-    public $middleWare = [];
+    public array $middleWare = [];
     /** @var array the queries fetched, excluding "req","_extra" and "_event" */
-    public $queries = [];
-    public $httpHost = '';
-    public $requestUri = '';
+    public array $queries = [];
+    public ?string $httpHost = null;
+    public string $requestUri = '';
     /** @var null|array It is an associative array that helps to identify the api and ws route. */
-    protected $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
+    protected ?array $identify = ['api' => 'api', 'ws' => 'ws', 'controller' => ''];
     /** @var array[] it holds the whitelist. Ex: ['controller'=>['a1','a2','a3']] */
-    protected $whitelist = [
+    protected array $whitelist = [
         'controller' => null,
         'category' => null,
         'action' => null,
@@ -90,7 +90,7 @@ class RouteOne
         'subsubcategory' => null,
         'module' => null
     ];
-    protected $whitelistLower = [
+    protected array $whitelistLower = [
         'controller' => null,
         'category' => null,
         'action' => null,
@@ -101,16 +101,16 @@ class RouteOne
     /**
      * @var string|null=['api','ws','controller','front'][$i]
      */
-    private $forceType;
-    private $defController;
-    private $defAction;
-    private $defCategory;
-    private $defSubCategory;
-    private $defSubSubCategory;
-    private $defModule;
+    private ?string $forceType;
+    private string $defController = '';
+    private string $defAction = '';
+    private string $defCategory = '';
+    private string $defSubCategory = '';
+    private string $defSubSubCategory = '';
+    private string $defModule = '';
     /** @var array|bool it stores the list of path used for the modules */
     private $moduleList;
-    private $isModule;
+    private bool $isModule;
     /**
      * <ul>
      * <li><b>none:</b>if the path uses a module then the <b>type</b> is calculated normally (default)</li>
@@ -121,8 +121,8 @@ class RouteOne
      * </ul>
      * @var string=['none','modulefront','nomodulefront'][$i]
      */
-    private $moduleStrategy;
-    private $isFetched = false;
+    private string $moduleStrategy;
+    private bool $isFetched = false;
 
     /**
      * RouteOne constructor.
@@ -315,7 +315,7 @@ class RouteOne
         $itemArr = [];
         foreach ($items as $v) {
             $p = trim($v, '{}' . " \t\n\r\0\x0B");
-            if($p!=='') {
+            if ($p !== '') {
                 $itemAdd = explode(':', $p, 2);
                 if (count($itemAdd) === 1) {
                     $itemAdd[] = null; // add a default value
@@ -342,7 +342,7 @@ class RouteOne
      * @return int|string|null return null if not path is evaluated,<br/>
      *                     otherwise, it returns the number/name of the path. It could return the value 0 (first path)
      */
-    public function fetchPath(string $charactersAllowed='alphanumericnohypens')
+    public function fetchPath(string $charactersAllowed = 'alphanumericnohypens')
     {
         $this->lastError = [];
         $this->currentPath = null;
@@ -357,7 +357,6 @@ class RouteOne
                 $this->lastError[$pnum] = "Pattern [$pnum], base url does not match";
                 continue;
             }
-
             $urlFetched = substr($urlFetchedOriginal ?? '', strlen($this->pathBase[$pnum]));
             // nginx returns a path as /aaa/bbb apache aaa/bbb
             if ($urlFetched !== '') {
@@ -366,7 +365,7 @@ class RouteOne
             $path = $this->getExtracted($urlFetched);
             foreach ($this->path[$pnum] as $key => $v) {
                 if ($v[1] === null) {
-                    if (!array_key_exists($key, $path) || (!isset($path[$key]) || $path[$key]==='')  ) {
+                    if (!array_key_exists($key, $path) || (!isset($path[$key]) || $path[$key] === '')) {
                         // the field is required but there we don't find any value
                         $this->lastError[$pnum] = "Pattern [$pnum] required field ($v[0]) not found in url";
                         continue 2;
@@ -384,24 +383,23 @@ class RouteOne
                 }
                 switch ($charactersAllowed) {
                     case 'alphanumerichypens':
-                        $pattern='/[^a-zA-Z0-9_-]/';
+                        $pattern = '/[^a-zA-Z0-9_-]/';
                         break;
                     case 'alphanumericnohypens':
-                        $pattern='/[^a-zA-Z0-9_]/';
+                        $pattern = '/[^a-zA-Z0-9_]/';
                         break;
                     default:
-                        $pattern=null; // no control
-
+                        $pattern = null; // no control
                 }
                 switch ($name) {
                     case 'controller':
-                        $this->controller =!$pattern ? $value: preg_replace($pattern, "", $value);
+                        $this->controller = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case 'action':
-                        $this->action = !$pattern ? $value:preg_replace($pattern, "", $value);
+                        $this->action = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case 'module':
-                        $this->module = !$pattern ? $value:preg_replace($pattern, "", $value);
+                        $this->module = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case 'id':
                         $this->id = $value;
@@ -410,13 +408,13 @@ class RouteOne
                         $this->idparent = $value;
                         break;
                     case 'category':
-                        $this->category = !$pattern ? $value:preg_replace($pattern, "", $value);
+                        $this->category = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case 'subcategory':
-                        $this->subcategory = !$pattern ? $value:preg_replace($pattern, "", $value);
+                        $this->subcategory = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case 'subsubcategory':
-                        $this->subsubcategory = !$pattern ? $value:preg_replace($pattern, "", $value);
+                        $this->subsubcategory = !$pattern ? $value : preg_replace($pattern, "", $value);
                         break;
                     case '':
                         break;
@@ -424,7 +422,6 @@ class RouteOne
                         throw new RuntimeException("pattern incorrect [$name:$value]");
                 }
             }
-
             $this->currentPath = $pnum;
             break;
         }
@@ -807,7 +804,7 @@ class RouteOne
      * @param mixed|null $defaultValue the default value if the value is not found.<br/>
      *                                 It is ignored by body and verb because both always returns a value
      * @return false|mixed|string|null
-     * @throws RuntimeException
+     * @throws RuntimeException|JsonException
      */
     public function getMultiple(string $key, string $type, $defaultValue = null)
     {
@@ -1500,6 +1497,7 @@ class RouteOne
      * @param bool $jsonDeserialize if true then it de-serialize the values.
      * @param bool $asAssociative   if true (default value) then it returns as an associative array.
      * @return false|mixed|string
+     * @throws JsonException
      */
     public function getBody(bool $jsonDeserialize = false, bool $asAssociative = true)
     {
@@ -1507,7 +1505,7 @@ class RouteOne
         if (!$jsonDeserialize) {
             return $entityBody;
         }
-        return json_decode($entityBody, $asAssociative);
+        return json_decode($entityBody, $asAssociative, 512, JSON_THROW_ON_ERROR);
     }
 
     /**

@@ -859,6 +859,9 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2024-03-02 1.33
+  * Updating dependency to PHP 7.4. The extended support of PHP 7.2 ended 3 years ago.
+  * Added more type hinting in the code.
 * 2024-01-22 1.32.1
   * fixed a problem when the pattern doesn't have values, example "contact/" 
 * 2024-01-22 1.32

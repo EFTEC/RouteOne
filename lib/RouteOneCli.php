@@ -4,17 +4,22 @@ namespace eftec\routeone;
 
 use eftec\CliOne\CliOne;
 use eftec\CliOne\CliOneParam;
+use JsonException;
 use RuntimeException;
 
 class RouteOneCli
 {
     /** @var CliOne */
-    public $cli;
-    public const VERSION = "1.0";
-    /** @var RouteOne */
-    public $route;
-    public $paths = [];
+    public CliOne $cli;
+    public const VERSION = "1.1";
+    /** @var RouteOne|null */
+    public ?RouteOne $route= null;
+    public array $paths = [];
 
+    /**
+     * The constructor
+     * @throws JsonException
+     */
     public function __construct(bool $run = true)
     {
         $this->route = new RouteOne();
@@ -118,6 +123,9 @@ class RouteOneCli
         $this->cli->createOrReplaceParam('init', [], 'command')->add();
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuRouterOnePaths(): void
     {
         $this->cli->upLevel('paths');
@@ -216,6 +224,9 @@ class RouteOneCli
     }
 
     /** @noinspection PhpUnused */
+    /**
+     * @throws JsonException
+     */
     public function menuRouterOneSave(): void
     {
         $this->cli->upLevel('save');
@@ -303,6 +314,9 @@ class RouteOneCli
     }
 
     /** @noinspection PhpUnused */
+    /**
+     * @throws JsonException
+     */
     public function menuRouterOneload(): void
     {
         $this->cli->upLevel('load');
@@ -328,6 +342,9 @@ class RouteOneCli
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function menuRouterOneConfigure(): void
     {
         $this->cli->upLevel('configure');

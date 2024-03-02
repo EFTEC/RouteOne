@@ -17,9 +17,9 @@
     }
   ],
   "require": {
-    "php": ">=7.2",
+    "php": ">=7.4",
     "ext-json": "*",
-    "eftec/clione": "^1.27"
+    "eftec/clione": "^1.32"
   },
   "archive": {
     "exclude": [
