@@ -3,10 +3,10 @@ It reads the URL route and parses the values of path, so it could be interpreted
 
 [![Packagist](https://img.shields.io/packagist/v/eftec/routeone.svg)](https://packagist.org/packages/eftec/routeone)
 [![Total Downloads](https://poser.pugx.org/eftec/routeone/downloads)](https://packagist.org/packages/eftec/routeone)
-[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)]()
 [![composer](https://img.shields.io/badge/composer-%3E1.6-blue.svg)]()
-[![php](https://img.shields.io/badge/php-%3E7.1-green.svg)]()
-[![php](https://img.shields.io/badge/php-%3E8.0-green.svg)]()
+[![php](https://img.shields.io/badge/php-%3E7.4-green.svg)]()
+[![php](https://img.shields.io/badge/php-%3E8.4-green.svg)]()
 [![coverage](https://img.shields.io/badge/coverage-80%25-green)]()
 [![compatible](https://img.shields.io/badge/compatible-linux%7Cwindows%7Cmacos-green)]()
 
@@ -859,6 +859,8 @@ Now, lets configure the paths
 
 
 ## Changelog
+* 2024-12-31 1.34
+  * updated to PHP 8.4 
 * 2024-03-02 1.33
   * Updating dependency to PHP 7.4. The extended support of PHP 7.2 ended 3 years ago.
   * Added more type hinting in the code.

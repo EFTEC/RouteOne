@@ -17,12 +17,12 @@ use UnexpectedValueException;
  * @package   RouteOne
  * @copyright 2019-2024 Jorge Castro Castillo
  * @license   (dual licence lgpl v3 and commercial)
- * @version   1.33 2024-03-02
+ * @version   1.34 2024-12-31
  * @link      https://github.com/EFTEC/RouteOne
  */
 class RouteOne
 {
-    public const VERSION = '1.33';
+    public const VERSION = '1.34';
     /** @var RouteOne|null */
     public static ?RouteOne $instance = null;
     /** @var string The name of the argument used by apache and nginx (by default it is req) */
@@ -101,7 +101,7 @@ class RouteOne
     /**
      * @var string|null=['api','ws','controller','front'][$i]
      */
-    private ?string $forceType;
+    private ?string $forceType = '';
     private string $defController = '';
     private string $defAction = '';
     private string $defCategory = '';

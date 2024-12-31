@@ -13,7 +13,7 @@ class RouteOneCli
     public CliOne $cli;
     public const VERSION = "1.1";
     /** @var RouteOne|null */
-    public ?RouteOne $route= null;
+    public ?RouteOne $route = null;
     public array $paths = [];
 
     /**
@@ -24,7 +24,7 @@ class RouteOneCli
     {
         $this->route = new RouteOne();
         $this->cli = CliOne::instance();
-        $this->cli->debug=true;
+        $this->cli->debug = true;
         if (!CliOne::hasMenu()) {
             $this->cli->setErrorType();
             $this->cli->addMenu('mainmenu',
@@ -104,7 +104,6 @@ class RouteOneCli
             }
             $this->cli->evalMenu('mainmenu', $this);
         }
-
     }
 
     public function showLogo(): void
@@ -146,7 +145,7 @@ class RouteOneCli
                         //->setAllowEmpty()
                         ->setInput()
                         ->setDescription('', 'Select the name of the path',
-                            ['select an unique name for this path','example:web'])
+                            ['select an unique name for this path', 'example:web'])
                         ->evalParam(true);
                     $tmp2 = $this->cli->createOrReplaceParam('extracolumn_sql')
                         //->setAllowEmpty()
@@ -155,13 +154,13 @@ class RouteOneCli
                             ['select the path to be used using the syntax:',
                                 'fixedpath/{requiredvalue}/{optionalvalue:defaultvalue}',
                                 'Example:{controller:Home}/{id}/{idparent} '
-                                ,'{controller}: the controller'
-                                ,'{action}: the action'
-                                ,'{id}: the identifier'
-                                ,'{idparent}: the parent object'
-                                ,'{category}: the category'
-                                ,'{subcategory}: the subcategory'
-                                ,'{subsubcategory}: the subsubcategory'])
+                                , '{controller}: the controller'
+                                , '{action}: the action'
+                                , '{id}: the identifier'
+                                , '{idparent}: the parent object'
+                                , '{category}: the category'
+                                , '{subcategory}: the subcategory'
+                                , '{subsubcategory}: the subsubcategory'])
                         ->setDefault('{controller:Home}/{action:list}/{id}/{idparent}')
                         ->evalParam(true);
                     $tmp3 = $this->cli->createOrReplaceParam('extracolumn_namespace')
@@ -197,15 +196,15 @@ class RouteOneCli
                             ->setDescription('', 'Select the path',
                                 ['select the path to be used using the syntax {id:defaultvalue}',
                                     'example:{controller:Home}/{id}/{idparent} '
-                                    ,'{controller}: the controller'
-                                    ,'{action}: the action'
-                                    ,'{event}: the event'
-                                    ,'{verb}: the verb (GET/POST/etc.)'
-                                    ,'{id}: the identifier'
-                                    ,'{idparent}: the parent object'
-                                    ,'{category}: the category'
-                                    ,'{subcategory}: the subcategory'
-                                    ,'{subsubcategory}: the subsubcategory'])
+                                    , '{controller}: the controller'
+                                    , '{action}: the action'
+                                    , '{event}: the event'
+                                    , '{verb}: the verb (GET/POST/etc.)'
+                                    , '{id}: the identifier'
+                                    , '{idparent}: the parent object'
+                                    , '{category}: the category'
+                                    , '{subcategory}: the subcategory'
+                                    , '{subsubcategory}: the subsubcategory'])
                             ->setDefault($v[0])
                             ->evalParam(true);
                         $tmp3 = $this->cli->createOrReplaceParam('extracolumn_sql2')
@@ -349,12 +348,12 @@ class RouteOneCli
     {
         $this->cli->upLevel('configure');
         $this->cli->setColor(['byellow'])->showBread();
-       /* $this->cli->createOrReplaceParam('routerfilename', [], 'onlyinput')
-            ->setDescription('The router filename', 'Select the router filename', [
-                'example: index.php'])
-            ->setInput(true, 'string', 'index.php')
-            ->setCurrentAsDefault()
-            ->evalParam(true);*/
+        /* $this->cli->createOrReplaceParam('routerfilename', [], 'onlyinput')
+             ->setDescription('The router filename', 'Select the router filename', [
+                 'example: index.php'])
+             ->setInput(true, 'string', 'index.php')
+             ->setCurrentAsDefault()
+             ->evalParam(true);*/
         $this->cli->createOrReplaceParam('dev', [], 'none')
             ->setDefault(gethostname())
             ->setCurrentAsDefault()
@@ -385,9 +384,9 @@ class RouteOneCli
 
     public function getConfig(): array
     {
-        $r= $this->cli->getValueAsArray([ 'baseurldev', 'baseurlprod', 'dev']);
-        $r['dev']= $r['dev']==='yes'?gethostname():'';
-        $r['paths']=$this->paths;
+        $r = $this->cli->getValueAsArray(['baseurldev', 'baseurlprod', 'dev']);
+        $r['dev'] = $r['dev'] === 'yes' ? gethostname() : '';
+        $r['paths'] = $this->paths;
         return $r;
     }
 
@@ -395,7 +394,7 @@ class RouteOneCli
     {
         $this->paths = $array['paths'];
         unset($array['paths']);
-        $this->cli->setParamUsingArray($array, [ 'baseurldev', 'baseurlprod', 'dev']);
+        $this->cli->setParamUsingArray($array, ['baseurldev', 'baseurlprod', 'dev']);
         $this->cli->callVariablesCallBack();
     }
 
